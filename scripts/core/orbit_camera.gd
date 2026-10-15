@@ -14,6 +14,10 @@ const MAX_PITCH: float = 1.45
 ## Photo mode allows getting closer and looking from lower.
 const PHOTO_MIN_DISTANCE: float = 1.2
 const PHOTO_MIN_PITCH: float = -0.15
+## How far round the cake the camera may swing either side of the front. The
+## turntable turns the cake itself, so the set behind always looks composed.
+const YAW_LIMIT: float = 1.15
+const PHOTO_YAW_LIMIT: float = 1.5
 const ORBIT_SPEED: float = 0.0055
 const SMOOTHING: float = 14.0
 
@@ -46,14 +50,15 @@ func _ready() -> void:
 	dof = CameraAttributesPractical.new()
 	dof.dof_blur_far_enabled = true
 	dof.dof_blur_near_enabled = true
-	dof.dof_blur_amount = 0.07
+	dof.dof_blur_amount = 0.11
 	dof.auto_exposure_enabled = false
 	attributes = dof
 	_apply()
 
 
 func orbit(relative: Vector2) -> void:
-	yaw_goal -= relative.x * ORBIT_SPEED
+	var yaw_limit: float = PHOTO_YAW_LIMIT if photo_mode else YAW_LIMIT
+	yaw_goal = clampf(yaw_goal - relative.x * ORBIT_SPEED, -yaw_limit, yaw_limit)
 	var min_pitch: float = PHOTO_MIN_PITCH if photo_mode else MIN_PITCH
 	pitch_goal = clampf(pitch_goal + relative.y * ORBIT_SPEED, min_pitch, MAX_PITCH)
 
@@ -76,6 +81,7 @@ func set_photo_mode(enabled: bool) -> void:
 	photo_mode = enabled
 	if not enabled:
 		distance_goal = clampf(distance_goal, MIN_DISTANCE, MAX_DISTANCE)
+		yaw_goal = clampf(yaw_goal, -YAW_LIMIT, YAW_LIMIT)
 		pitch_goal = clampf(pitch_goal, MIN_PITCH, MAX_PITCH)
 
 
@@ -107,7 +113,7 @@ func _update_focus() -> void:
 		return
 	var focus_distance: float = global_position.distance_to(focus_point)
 	# Sharp around the cake, gently soft in front of and behind it.
-	dof.dof_blur_far_distance = focus_distance + 2.6
-	dof.dof_blur_far_transition = 5.0
+	dof.dof_blur_far_distance = focus_distance + 1.8
+	dof.dof_blur_far_transition = 4.0
 	dof.dof_blur_near_distance = maxf(focus_distance - 2.8, 0.3)
 	dof.dof_blur_near_transition = 1.2

@@ -57,6 +57,10 @@ func _run() -> void:
 		"sweep":
 			await _wait_for_cake(context)
 			await _settings_sweep(context)
+		"shadow_sweep":
+			_build_heavy(context)
+			await _wait_for_cake(context)
+			await _shadow_sweep(context)
 		"bench":
 			await _wait_for_cake(context)
 			DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
@@ -71,7 +75,7 @@ func _run() -> void:
 		(main.get("tools") as ToolController).select_tool(StringName(args["tool"]))
 	if args.has("shots"):
 		await _take_shots(context)
-	if args.has("shots") or scenario == "bench" or scenario == "sweep" or scenario == "input_test":
+	if args.has("shots") or scenario == "bench" or scenario == "sweep" or scenario == "shadow_sweep" or scenario == "input_test":
 		get_tree().quit()
 
 
@@ -247,7 +251,7 @@ func _benchmark(context: EditorContext) -> void:
 
 
 func _describe(r: Dictionary) -> String:
-	return "avg %.1f fps, 1%% low %.1f fps, GPU %.2f ms, CPU render %.2f ms, draw calls %d, primitives %d" % [r["avg_fps"], r["low_fps"], r["gpu_ms"], r["cpu_ms"], r["draw_calls"], r["primitives"]]
+	return "avg %.1f fps, 1%% low %.1f fps, GPU %.2f ms, CPU render %.2f ms, scripts %.2f ms, physics %.2f ms, draw calls %d, primitives %d" % [r["avg_fps"], r["low_fps"], r["gpu_ms"], r["cpu_ms"], r["process_ms"], r["physics_ms"], r["draw_calls"], r["primitives"]]
 
 
 func _measure(_context: EditorContext, seconds: float, each_frame: Callable) -> Dictionary:
@@ -255,6 +259,8 @@ func _measure(_context: EditorContext, seconds: float, each_frame: Callable) -> 
 	RenderingServer.viewport_set_measure_render_time(viewport_rid, true)
 	var gpu_total: float = 0.0
 	var cpu_total: float = 0.0
+	var process_total: float = 0.0
+	var physics_total: float = 0.0
 	var times: Array[float] = []
 	var start: int = Time.get_ticks_usec()
 	var last: int = start
@@ -270,6 +276,8 @@ func _measure(_context: EditorContext, seconds: float, each_frame: Callable) -> 
 		primitives = maxi(primitives, int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)))
 		gpu_total += RenderingServer.viewport_get_measured_render_time_gpu(viewport_rid)
 		cpu_total += RenderingServer.viewport_get_measured_render_time_cpu(viewport_rid)
+		process_total += Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
+		physics_total += Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
 	times.sort()
 	var total: float = 0.0
 	for t in times:
@@ -285,6 +293,8 @@ func _measure(_context: EditorContext, seconds: float, each_frame: Callable) -> 
 		"primitives": primitives,
 		"gpu_ms": gpu_total / float(times.size()),
 		"cpu_ms": cpu_total / float(times.size()),
+		"process_ms": process_total / float(times.size()),
+		"physics_ms": physics_total / float(times.size()),
 	}
 
 
@@ -593,3 +603,34 @@ func _build_tiers(context: EditorContext) -> void:
 		DirAccess.make_dir_recursive_absolute(folder)
 		image.save_png(folder.path_join("tiers_midsweep.png"))
 		print("SHOT midsweep")
+
+
+## Compares shadow layouts on a heavy cake (each measured twice, interleaved,
+## so a laptop changing speed does not skew the result).
+func _shadow_sweep(context: EditorContext) -> void:
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	Engine.max_fps = 0
+	var sun: DirectionalLight3D = (main.get("lighting") as StudioLighting).sun
+	var layouts: Array = [
+		["2 splits, 22, split 0.25", func() -> void:
+			sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+			sun.directional_shadow_max_distance = 22.0
+			sun.directional_shadow_split_1 = 0.25],
+		["2 splits, 16, split 0.6", func() -> void:
+			sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+			sun.directional_shadow_max_distance = 16.0
+			sun.directional_shadow_split_1 = 0.6],
+		["orthogonal, 16", func() -> void:
+			sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
+			sun.directional_shadow_max_distance = 16.0],
+		["no sun shadow", func() -> void:
+			sun.shadow_enabled = false],
+		["shadow back on, orthogonal 16", func() -> void:
+			sun.shadow_enabled = true],
+	]
+	for round_index in range(2):
+		for layout: Array in layouts:
+			(layout[1] as Callable).call()
+			await _measure(context, 0.4, func(_t: float) -> void: pass)
+			var r: Dictionary = await _measure(context, 1.5, func(_t: float) -> void: pass)
+			print("SHADOWS %-32s GPU %.2f ms  primitives %d  draw calls %d" % [layout[0], r["gpu_ms"], r["primitives"], r["draw_calls"]])

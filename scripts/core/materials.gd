@@ -8,6 +8,7 @@ const BUTTERCREAM_SHADER: Shader = preload("res://art/shaders/buttercream.gdshad
 const TIER_SHADER: Shader = preload("res://art/shaders/tier_frosting.gdshader")
 
 static var _noise3d: NoiseTexture3D
+static var _noise2d: NoiseTexture2D
 static var _buttercream: ShaderMaterial
 static var _ghost: StandardMaterial3D
 static var _cache: Dictionary = {}
@@ -29,6 +30,32 @@ static func noise3d() -> NoiseTexture3D:
 		_noise3d.normalize = true
 		_noise3d.noise = noise
 	return _noise3d
+
+
+## Soft tileable 2D noise for set materials (marble, tiles, window clouds).
+static func noise2d() -> NoiseTexture2D:
+	if _noise2d == null:
+		var noise := FastNoiseLite.new()
+		noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+		noise.frequency = 0.006
+		noise.fractal_octaves = 4
+		noise.seed = 21
+		_noise2d = NoiseTexture2D.new()
+		_noise2d.width = 512
+		_noise2d.height = 512
+		_noise2d.seamless = true
+		_noise2d.normalize = true
+		_noise2d.generate_mipmaps = true
+		_noise2d.noise = noise
+	return _noise2d
+
+
+## A shader material for the set, with the shared noise texture bound.
+static func set_shader(shader: Shader) -> ShaderMaterial:
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	material.set_shader_parameter("noise_tex", noise2d())
+	return material
 
 
 ## The material every piped stroke uses (colour comes from vertex colours).
