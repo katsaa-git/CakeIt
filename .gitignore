@@ -12,3 +12,6 @@ export_credentials.cfg
 .DS_Store
 Thumbs.db
 .vscode/
+
+# Reference screenshots of other games (look inspiration only, not ours to redistribute)
+docs/reference/

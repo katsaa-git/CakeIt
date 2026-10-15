@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="TipDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/piping/tip_definition.gd" id="1_tip"]
+[ext_resource type="Script" path="res://scripts/piping/profiles/star_profile.gd" id="2_profile"]
+
+[sub_resource type="Resource" id="Profile_open_star"]
+script = ExtResource("2_profile")
+points = 8
+depth = 0.24
+ridge_fullness = 1.6
+squash = 0.95
+sides = 48
+
+[resource]
+script = ExtResource("1_tip")
+id = &"open_star"
+display_name = "Open Star"
+description = "Soft ridged lines, stars and rosettes. Click for a star kiss."
+sort_order = 2
+tags = PackedStringArray("border", "rosette", "star")
+profile = SubResource("Profile_open_star")
+lift = 0.55
+end_style = 1
+end_length = 1.6
+dollop_height = 1.4
+dollop_twist = 0.9
+ring_spacing = 0.28
+speed_thinning = 0.12
+dwell_growth = 0.7
+size_names = PackedStringArray("Small", "Medium", "Large")
+size_presets = PackedFloat32Array(0.045, 0.075, 0.11)
+min_size = 0.025
+max_size = 0.18

@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="TipDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/piping/tip_definition.gd" id="1_tip"]
+[ext_resource type="Script" path="res://scripts/piping/profiles/round_profile.gd" id="2_profile"]
+
+[sub_resource type="Resource" id="Profile_round"]
+script = ExtResource("2_profile")
+squash = 0.9
+sides = 20
+
+[resource]
+script = ExtResource("1_tip")
+id = &"round"
+display_name = "Round"
+description = "Plain lines, dots and pearls. Hold still to grow a bigger pearl."
+sort_order = 1
+tags = PackedStringArray("line", "dot", "pearl", "writing")
+profile = SubResource("Profile_round")
+lift = 0.5
+end_style = 0
+dollop_height = 1.0
+ring_spacing = 0.3
+speed_thinning = 0.15
+dwell_growth = 0.8
+size_names = PackedStringArray("Fine", "Medium", "Bold")
+size_presets = PackedFloat32Array(0.035, 0.06, 0.095)
+min_size = 0.02
+max_size = 0.16
