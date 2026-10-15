@@ -9,10 +9,16 @@ extends Node
 ##   A / D (hold)       spin the turntable    R            auto-spin on/off
 ##   1 2 3              size presets          [ ]          fine-tune size
 ##   Tab / Shift+Tab    next / previous tip   Ctrl+Z, Ctrl+Y  undo, redo
+##   B C F V T          pipe, coat, scraper, decorate, tiers
+##   H  P               help, photo
 
 signal undo_performed(command: CakeCommand)
 signal redo_performed(command: CakeCommand)
 signal spin_toggled(enabled: bool)
+signal help_requested
+signal photo_requested
+
+const TOOL_KEYS: Dictionary = {KEY_B: &"pipe", KEY_C: &"coat", KEY_F: &"spatula", KEY_V: &"decorate", KEY_T: &"tiers"}
 
 var context: EditorContext
 var tools: Dictionary = {}
@@ -258,6 +264,17 @@ func _handle_key(key: InputEventKey) -> void:
 		KEY_R:
 			if not key.echo and not ctrl:
 				toggle_auto_spin()
+		KEY_H:
+			if not key.echo:
+				help_requested.emit()
+		KEY_P:
+			if not key.echo and not ctrl:
+				photo_requested.emit()
+		KEY_B, KEY_C, KEY_F, KEY_V, KEY_T:
+			if key.echo or ctrl:
+				return
+			if tools.has(TOOL_KEYS[key.keycode]):
+				select_tool(TOOL_KEYS[key.keycode])
 		_:
 			handled = false
 	if handled:

@@ -25,6 +25,9 @@ to extend it, and what still needs work. Newest milestone first in the log.
 | 1, 2, 3 | Tip size presets |
 | Ctrl + wheel, or [ and ] | Fine-tune tip size |
 | Tab / Shift + Tab | Next / previous tip |
+| B, C, F, V, T | Tools: piping bag, frosting coat, smoothing scraper, decorations, tiers |
+| Turntable ring (bottom right) | Drag round to spin; click the middle for auto-spin |
+| H | Controls card |
 | Ctrl + Z, Ctrl + Y (or Ctrl + Shift + Z) | Undo, redo |
 
 ## How it is built
@@ -51,6 +54,20 @@ Everything is created from code; there are no hand-made models.
   is turned into the cake's own frame instead, so picking is exact even while
   spinning fast.
 
+## The tools
+
+- **Piping bag (B)**: pipe lines, dots and kisses. Tips, sizes and fine size
+  are on the bottom shelf; colours on the right.
+- **Frosting coat (C)**: pick a colour (and "Smooth buttercream" or
+  "Semi-naked"), then click a tier. The new coat spreads from the top centre
+  down the sides.
+- **Smoothing scraper (F)**: hold it against a coated tier and let the cake
+  spin under it (A / D or the ring), or drag along the side. Spatula marks fade
+  to a glass-smooth finish; one undo step per press.
+- **Tiers (T)**: click a tier to select it, then pick a width (Petite, Small,
+  Medium, Large) and height (Short, Classic, Tall), add a tier on top or
+  remove one. Piping and decorations on a resized tier move with its surface.
+
 ## Adding a new piping tip
 
 1. Copy a file in `data/tips/` (for example `02_open_star.tres`) and rename it.
@@ -61,6 +78,12 @@ Everything is created from code; there are no hand-made models.
 
 A brand-new cross-section shape needs a small `TipProfile` subclass in
 `scripts/piping/profiles/` (one function that returns the outline points).
+
+## Adding tier sizes or colours
+
+- Tier sizes: add a `.tres` in `data/tiers/` (copy one): `kind` 0 = width
+  (value is the radius), 1 = height. The tier shelf picks it up automatically.
+- Colours: edit `data/palettes/frosting.tres` (colour and name lists).
 
 ## Tests and tools
 
@@ -99,7 +122,9 @@ a long stroke cost ~39 ms. What changed:
 
 ## Known issues
 
-- The interface is still the interim toolbar (default grey buttons).
+- The interface layout is in place but still needs its polish pass
+  (bigger icons, thumbnails for tips, nicer tooltips).
+- The decorations button is greyed out until the decorations milestone.
 - Lighting and set are placeholders (flat background, grey counter).
 - The metal nozzle looks dark because there is nothing for it to reflect yet.
 
@@ -110,6 +135,11 @@ a long stroke cost ~39 ms. What changed:
 
 ## Milestone log
 
+- **B. Turntable and tiers.** Tier tool with data-driven width/height presets,
+  add/remove/resize with undo (piping follows the surface), frosting coat
+  tool with a spreading-coat animation, semi-naked sponge look, smoothing
+  scraper, on-screen turntable ring, new cozy interface layout (tool rail,
+  shelves, palette, top bar, help card, clear-all confirm), command tests.
 - **A. Version check and piping core.** 4.7.2 check. New data model,
   command-based undo/redo, incremental stroke builder, merged stroke batches,
   turntable-proof picking, piping bag and cursor preview, dev runner for

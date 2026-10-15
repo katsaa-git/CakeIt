@@ -113,7 +113,8 @@ func set_coat(tier_id: int, color: Color, coated: bool, smoothness: float, anima
 
 func add_stroke(stroke: StrokeData) -> void:
 	_bump_id(stroke.id)
-	strokes.append(stroke)
+	# Keep creation order (by id) so undo and redo always give the same list.
+	strokes.insert(_insert_index(strokes, stroke.id), stroke)
 	stroke_added.emit(stroke)
 
 
@@ -129,7 +130,7 @@ func remove_stroke(stroke_id: int) -> StrokeData:
 
 func add_decoration(decoration: DecorationData) -> void:
 	_bump_id(decoration.id)
-	decorations.append(decoration)
+	decorations.insert(_insert_index(decorations, decoration.id), decoration)
 	decoration_added.emit(decoration)
 
 
@@ -173,8 +174,8 @@ func make_default() -> void:
 	_next_id = 1
 	var tier := TierData.new()
 	tier.id = new_id()
-	tier.radius = 1.4
-	tier.height = 1.1
+	tier.radius = 1.3
+	tier.height = 1.05
 	tiers.append(tier)
 	reset.emit()
 
@@ -196,3 +197,16 @@ func replace_all(new_tiers: Array[TierData], new_strokes: Array[StrokeData], new
 func _bump_id(id: int) -> void:
 	if id >= _next_id:
 		_next_id = id + 1
+
+
+## Where an item with this id goes to keep the list sorted by id.
+static func _insert_index(list: Array, id: int) -> int:
+	var low: int = 0
+	var high: int = list.size()
+	while low < high:
+		var middle: int = (low + high) / 2
+		if int(list[middle].get("id")) < id:
+			low = middle + 1
+		else:
+			high = middle
+	return low

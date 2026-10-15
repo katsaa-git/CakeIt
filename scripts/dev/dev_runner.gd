@@ -49,6 +49,8 @@ func _run() -> void:
 	match scenario:
 		"showcase":
 			_build_showcase(context)
+		"tiers":
+			await _build_tiers(context)
 		"input_test":
 			await _wait_for_cake(context)
 			await _input_test(context)
@@ -65,6 +67,8 @@ func _run() -> void:
 	await _wait_for_cake(context)
 	if scenario == "bench":
 		await _benchmark(context)
+	if args.has("tool"):
+		(main.get("tools") as ToolController).select_tool(StringName(args["tool"]))
 	if args.has("shots"):
 		await _take_shots(context)
 	if args.has("shots") or scenario == "bench" or scenario == "sweep" or scenario == "input_test":
@@ -105,8 +109,9 @@ func _take_shots(context: EditorContext) -> void:
 		camera.pitch = angle[1]
 		camera.distance = angle[2]
 		camera.pan = angle[3]
-		for i in range(40):
-			await get_tree().process_frame
+		# Wait in real time (the display may run at 60 or 120 Hz) so animations finish.
+		await get_tree().create_timer(1.3).timeout
+		await get_tree().process_frame
 		var image: Image = get_viewport().get_texture().get_image()
 		var path: String = folder.path_join("%s_%s.png" % [args.get("scenario", "empty"), angle_name])
 		image.save_png(path)
@@ -326,6 +331,12 @@ func _expect(condition: bool, message: String) -> void:
 
 ## Window position of a cake-frame point (injected events use window coordinates,
 ## which differ from the 1920x1080 canvas when the window is another size).
+## Angle (in the spinning cake frame) of the side currently facing the camera.
+func _front_angle(context: EditorContext) -> float:
+	var yaw: float = context.camera.yaw
+	return atan2(cos(yaw), sin(yaw)) + context.turntable.angle
+
+
 func _screen_of(context: EditorContext, cake_point: Vector3) -> Vector2:
 	var on_canvas: Vector2 = context.camera.unproject_position(context.picker.to_world(cake_point))
 	return get_viewport().get_final_transform() * on_canvas
@@ -375,8 +386,7 @@ func _drag(points: Array[Vector2]) -> void:
 func _input_test(context: EditorContext) -> void:
 	var model: CakeModel = context.model
 	var tier: TierData = model.tiers[0]
-	var camera_yaw: float = context.camera.yaw
-	var front: float = atan2(cos(camera_yaw), sin(camera_yaw))
+	var front: float = _front_angle(context)
 
 	# 1. Pipe a line across the front of the bottom tier.
 	var path: Array[Vector2] = []
@@ -419,8 +429,9 @@ func _input_test(context: EditorContext) -> void:
 	var angle_before: float = context.turntable.angle
 	var rim: Array[Vector2] = []
 	var rim_radius: float = Turntable.PLATE_RADIUS - 0.15
+	# Grab the rim off to the side: the front edge sits behind the bottom shelf.
 	for i in range(12):
-		var a: float = front + float(i) * 0.05
+		var a: float = front + 0.75 + float(i) * 0.05
 		rim.append(_screen_of(context, Vector3(cos(a) * rim_radius, 0.0, sin(a) * rim_radius)))
 	await _drag(rim)
 	_expect(absf(context.turntable.angle - angle_before) > 0.2, "dragging the rim spins the stand (%.2f rad)" % (context.turntable.angle - angle_before))
@@ -435,4 +446,150 @@ func _input_test(context: EditorContext) -> void:
 	_send_key(KEY_Z, true)
 	await get_tree().process_frame
 	_expect(model.tiers.size() == 1, "undo add tier")
+	await _input_test_tools(context)
 	print("INPUT_TEST %s (%d failures)" % ["PASSED" if _input_failures == 0 else "FAILED", _input_failures])
+
+
+func _click(position: Vector2) -> void:
+	await _drag([position] as Array[Vector2])
+
+
+func _front_of(context: EditorContext, tier: TierData, height01: float, offset: float = 0.0) -> Vector2:
+	var a: float = _front_angle(context) + offset
+	var base: float = context.model.tier_base_y(tier.id)
+	return _screen_of(context, Vector3(cos(a) * tier.radius, base + tier.height * height01, sin(a) * tier.radius))
+
+
+func _input_test_tools(context: EditorContext) -> void:
+	var model: CakeModel = context.model
+	var tools: ToolController = main.get("tools")
+	var tier: TierData = model.tiers[0]
+	for i in range(30):
+		await get_tree().process_frame
+
+	# Coat: pick a colour, press C, click the tier.
+	var mint: Color = (Content.palette(&"frosting") as SwatchPalette).colors[7]
+	context.set_color(mint)
+	_send_key(KEY_C, false)
+	await get_tree().process_frame
+	_expect(context.tool_id == &"coat", "C selects the coat tool")
+	await _click(_front_of(context, tier, 0.4))
+	_expect(tier.coat_color.is_equal_approx(mint) and tier.coated, "clicking a tier coats it in the chosen colour")
+	_send_key(KEY_Z, true)
+	await get_tree().process_frame
+	_expect(not model.tiers[0].coat_color.is_equal_approx(mint), "undo takes the coat back off")
+	_send_key(KEY_Y, true)
+
+	# Tiers: select by clicking, resize, check the piping follows.
+	_send_key(KEY_T, false)
+	await get_tree().process_frame
+	_expect(context.tool_id == &"tiers", "T selects the tier tool")
+	await _click(_front_of(context, tier, 0.5))
+	_expect(context.selected_tier_id == tier.id, "clicking a tier selects it")
+	var tier_tool: TierTool = tools.tools[&"tiers"]
+	var stroke_before: StrokeData = model.strokes[0]
+	var old_radius: float = tier.radius
+	tier_tool.set_width(1.6)
+	var resized: TierData = model.tier_by_id(tier.id)
+	_expect(is_equal_approx(resized.radius, 1.6), "width preset resizes the tier")
+	var moved: StrokeData = model.strokes_on(tier.id)[0]
+	var p: Vector3 = moved.points[moved.points.size() / 2]
+	_expect(absf(Vector2(p.x, p.z).length() - 1.6) < 0.02, "piping moves out with the tier's side (r %.3f)" % Vector2(p.x, p.z).length())
+	_send_key(KEY_Z, true)
+	await get_tree().process_frame
+	_expect(is_equal_approx(model.tier_by_id(tier.id).radius, old_radius) and model.strokes.has(stroke_before), "undo restores the size and the original piping")
+	tier_tool.add_tier()
+	_expect(model.tiers.size() == 2, "add a tier on top")
+	tier_tool.remove_selected()
+	_expect(model.tiers.size() == 1, "remove the selected tier")
+	_send_key(KEY_Z, true)
+	await get_tree().process_frame
+	_expect(model.tiers.size() == 2, "undo brings the removed tier back")
+	_send_key(KEY_Z, true)
+	await get_tree().process_frame
+	_expect(model.tiers.size() == 1, "undo the added tier too")
+
+	# Spatula: hold against the side while the cake spins.
+	_send_key(KEY_F, false)
+	await get_tree().process_frame
+	tier = model.tiers[0]
+	var smooth_before: float = tier.smoothness
+	context.turntable.auto_spin = true
+	for i in range(30):
+		await get_tree().process_frame
+	var spot: Vector2 = _front_of(context, tier, 0.75)
+	_send_motion(spot, Vector2.ZERO, 0)
+	await get_tree().process_frame
+	_send_button(spot, true)
+	for i in range(90):
+		await get_tree().process_frame
+	_send_button(spot, false)
+	await get_tree().process_frame
+	context.turntable.auto_spin = false
+	context.turntable.stop()
+	_expect(model.tiers[0].smoothness > smooth_before + 0.02, "the scraper smooths the coat as the cake spins (%.2f -> %.2f)" % [smooth_before, model.tiers[0].smoothness])
+	_send_key(KEY_Z, true)
+	await get_tree().process_frame
+	_expect(is_equal_approx(model.tiers[0].smoothness, smooth_before), "undo the smoothing")
+
+	# Turntable ring: dragging its bottom edge to the right turns the front of
+	# the cake to the right, the same way as dragging the stand's front rim.
+	_send_key(KEY_B, false)
+	await get_tree().process_frame
+	var front: float = _front_angle(context)
+	var rim_radius: float = Turntable.PLATE_RADIUS - 0.15
+	var rim: Array[Vector2] = []
+	for i in range(10):
+		var a: float = front + 0.85 - float(i) * 0.05
+		rim.append(_screen_of(context, Vector3(cos(a) * rim_radius, 0.0, sin(a) * rim_radius)))
+	var rim_dx: float = rim[rim.size() - 1].x - rim[0].x
+	var before_rim: float = context.turntable.angle
+	await _drag(rim)
+	var rim_change: float = context.turntable.angle - before_rim
+	context.turntable.stop()
+	for i in range(5):
+		await get_tree().process_frame
+	var dial: Control = (main.get("hud") as Hud).get_node("Root/TurntableDial")
+	var dial_rect: Rect2 = dial.get_global_rect()
+	var to_window: Transform2D = get_viewport().get_final_transform()
+	var bottom: Vector2 = dial_rect.get_center() + Vector2(0.0, dial_rect.size.y * 0.5 - 14.0)
+	var arc: Array[Vector2] = []
+	for i in range(10):
+		var a: float = PI * 0.5 + 0.5 - float(i) * 0.1
+		arc.append(to_window * (dial_rect.get_center() + Vector2(cos(a), sin(a)) * (dial_rect.size.x * 0.5 - 14.0)))
+	var before_dial: float = context.turntable.angle
+	await _drag(arc)
+	var dial_change: float = context.turntable.angle - before_dial
+	_expect(absf(dial_change) > 0.2, "dragging the turntable ring spins the cake (%.2f rad)" % dial_change)
+	print("INPUT_TEST info rim_change %.3f rim_dx %.1f dial_change %.3f arc_dx %.1f" % [rim_change, rim_dx, dial_change, arc[arc.size() - 1].x - arc[0].x])
+	_expect(signf(dial_change) == signf(rim_change) * signf(rim_dx) * signf(arc[arc.size() - 1].x - arc[0].x), "ring and stand rim spin the same way for the same hand motion")
+	context.turntable.stop()
+	if bottom == Vector2.ZERO:
+		pass
+
+
+## Three tiers in different sizes and coats, with one coat caught mid-sweep.
+func _build_tiers(context: EditorContext) -> void:
+	var model: CakeModel = context.model
+	var tier_tool: TierTool = (main.get("tools") as ToolController).tools[&"tiers"]
+	var palette: SwatchPalette = Content.palette(&"frosting")
+	var bottom: TierData = model.tiers[0]
+	context.commands.run(TierCommands.ResizeTier.new(model, bottom.id, 1.6, 1.05))
+	context.commands.run(TierCommands.CoatTier.new(model, bottom.id, palette.colors[0], false, 0.45))
+	tier_tool.add_tier()
+	tier_tool.add_tier()
+	var middle: TierData = model.tiers[1]
+	var top: TierData = model.tiers[2]
+	context.commands.run(TierCommands.CoatTier.new(model, middle.id, palette.colors[7], true, 0.9))
+	context.commands.run(TierCommands.ResizeTier.new(model, top.id, top.radius, 1.45))
+	for i in range(60):
+		await get_tree().process_frame
+	context.commands.run(TierCommands.CoatTier.new(model, top.id, palette.colors[2], true, 0.45))
+	if args.get("midsweep", "false") == "true":
+		await get_tree().create_timer(0.42).timeout
+		get_tree().paused = false
+		var image: Image = get_viewport().get_texture().get_image()
+		var folder: String = args.get("shots", OS.get_user_data_dir())
+		DirAccess.make_dir_recursive_absolute(folder)
+		image.save_png(folder.path_join("tiers_midsweep.png"))
+		print("SHOT midsweep")

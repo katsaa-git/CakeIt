@@ -58,31 +58,28 @@ func _ready() -> void:
 	tools = ToolController.new()
 	tools.setup(context)
 	add_child(tools)
-	tools.add_tool(PipingTool.new())
+	var piping := PipingTool.new()
+	tools.add_tool(piping)
+	tools.add_tool(CoatTool.new())
+	tools.add_tool(SpatulaTool.new())
+	tools.add_tool(TierTool.new())
+	context.set_color((Content.palette(&"frosting") as SwatchPalette).colors[0])
 
 	hud = Hud.new()
 	add_child(hud)
 	hud.setup(context, tools)
-	hud.add_tier_pressed.connect(add_tier)
-	hud.photo_pressed.connect(take_photo)
+	hud.photo_requested.connect(take_photo)
+	hud.clear_confirmed.connect(func() -> void: commands.run(TierCommands.ClearAll.new(model)))
+	tools.help_requested.connect(hud.toggle_help)
+	tools.photo_requested.connect(take_photo)
+	piping.stroke_finished.connect(func(_s: StrokeData) -> void: hud.hide_first_hint())
 
 	DevRunner.attach_if_requested(self)
 	print("CakeGame decorating scene ready")
 
 
 func add_tier() -> void:
-	if not model.can_add_tier():
-		context.toast("That's the tallest cake the stand can hold")
-		return
-	var top: TierData = model.tiers[model.tiers.size() - 1] if not model.tiers.is_empty() else null
-	var tier := TierData.new()
-	tier.id = model.new_id()
-	tier.radius = maxf(top.radius * 0.72, 0.6) if top != null else 1.4
-	tier.height = top.height * 0.92 if top != null else 1.1
-	if top != null:
-		tier.coat_color = top.coat_color
-		tier.coated = top.coated
-	commands.run(TierCommands.AddTier.new(tier, model.tiers.size()))
+	(tools.tools[&"tiers"] as TierTool).add_tier()
 
 
 ## Saves a picture of the cake (without the interface) to the screenshots folder.

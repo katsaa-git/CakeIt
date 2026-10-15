@@ -11,6 +11,8 @@ signal size_changed(size: float, preset_index: int)
 signal color_changed(color: Color)
 signal decoration_changed(definition: Resource)
 signal message(text: String)
+signal tier_selection_changed(tier_id: int)
+signal coat_style_changed(naked: bool)
 
 var model: CakeModel
 var commands: CommandStack
@@ -29,6 +31,10 @@ var color: Color = Color(1.0, 0.97, 0.92)
 var decoration: Resource
 ## True while the mouse is over an interface panel.
 var pointer_over_ui: bool = false
+## The tier picked with the tier tool (0 = none).
+var selected_tier_id: int = 0
+## Coat tool: true applies the semi-naked sponge look instead of a full coat.
+var coat_naked: bool = false
 
 
 func set_tool(id: StringName) -> void:
@@ -87,3 +93,15 @@ func set_decoration(definition: Resource) -> void:
 
 func toast(text: String) -> void:
 	message.emit(text)
+
+
+func select_tier(tier_id: int) -> void:
+	if tier_id == selected_tier_id:
+		return
+	selected_tier_id = tier_id
+	tier_selection_changed.emit(tier_id)
+
+
+func set_coat_naked(naked: bool) -> void:
+	coat_naked = naked
+	coat_style_changed.emit(naked)

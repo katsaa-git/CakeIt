@@ -102,6 +102,25 @@ func update_grab(world_point: Variant, mouse_x: float) -> void:
 		_grab_target += wrapf(wanted - _grab_target, -PI, PI)
 
 
+## Grabs the plate by an angle in the world's top-down view (radians, same
+## convention as atan2(z, x)). Used by the on-screen turntable ring.
+func begin_grab_angle(pointer_angle: float) -> void:
+	_grabbing = true
+	_grab_mode_drag = false
+	_history.clear()
+	velocity = 0.0
+	_grab_target = angle
+	_grab_offset = pointer_angle + angle
+	grab_started.emit()
+
+
+func update_grab_angle(pointer_angle: float) -> void:
+	if not _grabbing:
+		return
+	var wanted: float = _grab_offset - pointer_angle
+	_grab_target += wrapf(wanted - _grab_target, -PI, PI)
+
+
 func end_grab() -> void:
 	if not _grabbing:
 		return

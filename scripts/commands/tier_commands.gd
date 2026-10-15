@@ -97,8 +97,10 @@ class CoatTier extends CakeCommand:
 	var new_color: Color
 	var new_coated: bool
 	var new_smoothness: float
+	var animate: bool = true
 
-	func _init(model: CakeModel, id: int, color: Color, coated: bool, smoothness: float) -> void:
+	func _init(model: CakeModel, id: int, color: Color, coated: bool, smoothness: float, with_animation: bool = true) -> void:
+		animate = with_animation
 		tier_id = id
 		var tier: TierData = model.tier_by_id(id)
 		old_color = tier.coat_color
@@ -107,13 +109,13 @@ class CoatTier extends CakeCommand:
 		new_color = color
 		new_coated = coated
 		new_smoothness = smoothness
-		label = "Frosting coat"
+		label = "Frosting coat" if with_animation else "Smoothing"
 
 	func execute(model: CakeModel) -> void:
-		model.set_coat(tier_id, new_color, new_coated, new_smoothness, true)
+		model.set_coat(tier_id, new_color, new_coated, new_smoothness, animate)
 
 	func revert(model: CakeModel) -> void:
-		model.set_coat(tier_id, old_color, old_coated, old_smoothness, true)
+		model.set_coat(tier_id, old_color, old_coated, old_smoothness, animate)
 
 
 ## Removes all piping and decorations but keeps the tiers and their coats.
