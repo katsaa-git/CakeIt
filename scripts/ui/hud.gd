@@ -157,12 +157,18 @@ func _build_shelf() -> void:
 	var pipe := Shelves.PipeShelf.new()
 	pipe.setup(context)
 	_shelves[&"pipe"] = pipe
-	# Little 3D pictures of what each tip pipes, rendered once in the background.
-	var thumbnails := TipThumbnails.new()
-	thumbnails.name = "TipThumbnails"
+	# Little 3D pictures for the shelf cards, rendered once in the background.
+	var thumbnails := ThumbnailRenderer.new()
+	thumbnails.name = "Thumbnails"
 	add_child(thumbnails)
 	thumbnails.rendered.connect(pipe.set_thumbnail)
-	thumbnails.render_all.call_deferred(Content.tips())
+	thumbnails.render_tips.call_deferred(Content.tips())
+	if tools.tools.has(&"decorate"):
+		var decorate := Shelves.DecorationShelf.new()
+		decorate.setup(context)
+		_shelves[&"decorate"] = decorate
+		thumbnails.rendered.connect(decorate.set_thumbnail)
+		thumbnails.render_decorations.call_deferred(Content.decorations())
 	var coat := Shelves.CoatShelf.new()
 	coat.setup(context)
 	_shelves[&"coat"] = coat
@@ -371,6 +377,9 @@ func _build_confirm() -> void:
 # --- Updates ---------------------------------------------------------------------
 
 func _on_tool_changed(tool_id: StringName) -> void:
+	# The first-time hint is about piping; it goes once another tool is chosen.
+	if tool_id != &"pipe":
+		_hint.visible = false
 	if _tool_buttons.has(tool_id):
 		(_tool_buttons[tool_id] as IconButton).button_pressed = true
 	for id: StringName in _shelves:

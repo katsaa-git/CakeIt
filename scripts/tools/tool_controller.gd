@@ -204,6 +204,8 @@ func _handle_button(button: InputEventMouseButton) -> void:
 			if button.pressed:
 				_left_down = true
 				var mouse: Vector2 = button.position
+				# Back to the cake: typing in a text box is over.
+				get_viewport().gui_release_focus()
 				# Pick exactly where the click happened, not where the pointer was last frame.
 				_pointer = mouse
 				_hit = null if context.pointer_over_ui else context.picker.pick(mouse)

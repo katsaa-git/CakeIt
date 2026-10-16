@@ -1,3 +1,4 @@
+class_name CommandTests
 extends RefCounted
 ## Undo and redo: every command restores the cake exactly, in any order.
 

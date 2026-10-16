@@ -14,6 +14,8 @@ var transform := Transform3D.IDENTITY
 var color: Color = Color.WHITE
 var rng_seed: int = 0
 var path := PackedFloat32Array()
+## Words on a topper sign (empty for everything else).
+var text: String = ""
 
 
 func duplicate_data() -> DecorationData:
@@ -25,6 +27,7 @@ func duplicate_data() -> DecorationData:
 	copy.color = color
 	copy.rng_seed = rng_seed
 	copy.path = path.duplicate()
+	copy.text = text
 	return copy
 
 
@@ -39,6 +42,8 @@ func to_dict() -> Dictionary:
 	}
 	if not path.is_empty():
 		data["path"] = SaveMath.pack_floats(path, 0.0001)
+	if not text.is_empty():
+		data["text"] = text
 	return data
 
 
@@ -51,4 +56,5 @@ static func from_dict(data: Dictionary) -> DecorationData:
 	deco.color = Color.from_string(String(data.get("color", "ffffff")), Color.WHITE)
 	deco.rng_seed = int(data.get("seed", 0))
 	deco.path = SaveMath.unpack_floats(data.get("path", []))
+	deco.text = String(data.get("text", ""))
 	return deco

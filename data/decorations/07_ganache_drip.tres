@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/drip_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+pool_width = 0.24
+thickness = 0.03
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"ganache_drip"
+display_name = "Ganache Drip"
+description = "Drag along the top edge of a tier to pour glossy drips over it. Pick Chocolate, or any colour for a candy drip."
+category = &"chocolate"
+sort_order = 1
+tags = PackedStringArray("chocolate", "drip")
+placement = 3
+roughness = 0.16
+specular = 0.6
+clearcoat = 0.6

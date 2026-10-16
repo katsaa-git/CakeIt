@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/cutout_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+shape = 0
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"fondant_heart"
+display_name = "Fondant Heart"
+description = "A soft sugar-paste heart pressed onto the cake. Click to place it."
+category = &"fondant"
+sort_order = 1
+tags = PackedStringArray("fondant", "heart")
+facing = 1
+sink = 0.02
+roughness = 0.75
+specular = 0.3
+subsurface = 0.15

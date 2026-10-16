@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/cherry_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+size = 0.066
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"cherry"
+display_name = "Cherry"
+description = "A glossy cherry on top."
+category = &"fruit"
+sort_order = 3
+tags = PackedStringArray("fruit", "cherry", "classic")
+sink = 0.05
+max_tilt = 12.0
+color_mode = 1
+colors = PackedColorArray(0.78, 0.06, 0.12, 1)
+roughness = 0.12
+specular = 0.7
+clearcoat = 1.0
+subsurface = 0.2

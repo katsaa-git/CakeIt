@@ -11,8 +11,8 @@ var is_board: bool = false
 var material: ShaderMaterial
 var mesh_instance: MeshInstance3D
 var strokes: StrokeBatch
-## Decorations attach here (see DecorationLayer).
-var decoration_root: Node3D
+## The decorations on this tier.
+var decorations: DecorationLayer
 ## This tier's frame in the collision tree.
 var collision_frame: Node3D
 
@@ -53,9 +53,9 @@ func setup(id: int, collision_root: Node3D, board: bool = false, board_radius: f
 	strokes = StrokeBatch.new()
 	strokes.setup(id, Materials.buttercream(), collision_frame)
 	add_child(strokes)
-	decoration_root = Node3D.new()
-	decoration_root.name = "Decorations"
-	add_child(decoration_root)
+	decorations = DecorationLayer.new()
+	decorations.setup(id, null)
+	add_child(decorations)
 
 
 ## Matches the tier data: size, coat and height on the stack.

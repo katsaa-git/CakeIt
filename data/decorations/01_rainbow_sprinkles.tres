@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/sprinkle_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+shape = 0
+length = 0.06
+thickness = 0.016
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"rainbow_sprinkles"
+display_name = "Rainbow Sprinkles"
+description = "Hold and drag to shower the cake in happy little jimmies."
+category = &"sprinkles"
+sort_order = 1
+tags = PackedStringArray("sprinkles", "colourful")
+placement = 2
+brush_radius = 0.2
+rate = 160.0
+sink = 0.15
+max_tilt = 15.0
+color_mode = 2
+colors = PackedColorArray(0.96, 0.52, 0.64, 1, 0.52, 0.76, 0.95, 1, 0.99, 0.84, 0.38, 1, 0.56, 0.84, 0.62, 1, 0.76, 0.62, 0.94, 1, 1, 1, 1, 1, 0.98, 0.64, 0.42, 1)
+roughness = 0.35
+clearcoat = 0.3
+casts_shadow = false
+size_names = PackedStringArray("Fine", "Classic", "Chunky")
+size_presets = PackedFloat32Array(0.75, 1.0, 1.35)

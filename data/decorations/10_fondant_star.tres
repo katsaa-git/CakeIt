@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/cutout_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+shape = 1
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"fondant_star"
+display_name = "Fondant Star"
+description = "A soft sugar-paste star pressed onto the cake. Click to place it."
+category = &"fondant"
+sort_order = 2
+tags = PackedStringArray("fondant", "star")
+facing = 1
+sink = 0.02
+roughness = 0.75
+specular = 0.3
+subsurface = 0.15

@@ -44,8 +44,11 @@ func setup(cake_model: CakeModel, new_collision_root: Node3D, plate_radius: floa
 	model.tier_coat_changed.connect(_on_coat_changed)
 	model.stroke_added.connect(_on_stroke_added)
 	model.stroke_removed.connect(_on_stroke_removed)
+	model.decoration_added.connect(_on_decoration_added)
+	model.decoration_removed.connect(_on_decoration_removed)
 	_board = TierView.new()
 	_board.setup(CakeModel.BOARD_ID, collision_root, true, board_radius)
+	_board.decorations.model = model
 	add_child(_board)
 	_on_reset()
 
@@ -82,6 +85,14 @@ func flush() -> void:
 		_build_step(1 << 30)
 	for view in _all_views():
 		view.strokes.flush()
+		view.decorations.flush()
+
+
+## Shows decoration changes right away instead of at the end of the frame
+## (so a tool can swap its live preview for the real thing without a gap).
+func flush_decorations() -> void:
+	for view in _all_views():
+		view.decorations.flush()
 
 
 func stats() -> Dictionary:
@@ -146,6 +157,7 @@ func _on_reset() -> void:
 		view.queue_free()
 	_views.clear()
 	_board.strokes.clear_all()
+	_board.decorations.clear()
 	_build_queue.clear()
 	_job_builder = null
 	_job_stroke = null
@@ -153,6 +165,8 @@ func _on_reset() -> void:
 	_sync_tiers(false)
 	for stroke in model.strokes:
 		_build_queue.append(stroke)
+	for decoration in model.decorations:
+		_on_decoration_added(decoration)
 
 
 func _on_tiers_changed() -> void:
@@ -169,6 +183,7 @@ func _sync_tiers(animate: bool) -> void:
 		if is_new:
 			view = TierView.new()
 			view.setup(tier.id, collision_root)
+			view.decorations.model = model
 			add_child(view)
 			_views[tier.id] = view
 		view.sync(tier, y, animate and not is_new)
@@ -223,3 +238,15 @@ func _on_stroke_removed(stroke: StrokeData) -> void:
 	while _removed_order.size() > REMOVED_CACHE_SIZE:
 		_removed_cache.erase(_removed_order.pop_front())
 	stroke_removed_visual.emit(view, body_pieces)
+
+
+func _on_decoration_added(decoration: DecorationData) -> void:
+	var view: TierView = view_for(decoration.tier_id)
+	if view != null:
+		view.decorations.add(decoration)
+
+
+func _on_decoration_removed(decoration: DecorationData) -> void:
+	var view: TierView = view_for(decoration.tier_id)
+	if view != null:
+		view.decorations.remove(decoration)

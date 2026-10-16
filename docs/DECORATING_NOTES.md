@@ -7,78 +7,43 @@ to extend it, and what still needs work. Newest milestone first in the log.
 
 **Finished and committed:** milestones A (version check, piping core,
 performance), B (turntable, tiers, coat, spatula, interface layout), C
-(lighting, set and look) and D (the ten piping tips).
+(lighting, set and look), D (the ten piping tips) and E (decorations).
 
-**Next: milestone E (decorations). Not started; no E code exists yet.**
-Session 2 ended (paused at the owner's request) right after committing D.
+**Next: milestone F (juice and audio).** Not started. The plan for F to H
+is below.
 
-**Exact next steps for E** (design worked out, not yet written):
+**Exact next steps for F:**
 
-1. `DecorationDefinition` resource (`scripts/decorations/`): id,
-   display_name, description, `category`, `sort_order`, tags, `placement`
-   (SINGLE click, LINE evenly spaced along a drag, SCATTER brush, RIM drag
-   along a tier's top edge), `builder`, optional `scene_override` (.glb),
-   `color_mode` (PICKED from the palette, FIXED, MIX of `colors`), size
-   presets, `spacing`, `brush_radius`, `sink`, alignment (on the surface /
-   upright), facing (random spin / toward the viewer), top-only flag,
-   `validate()`.
-2. `DecorationBuilder` subclasses that build one mesh at size 1: sprinkle
-   rod, confetti disc, pearl/dragée sphere, candle (+ flame offset), drip
-   (per decoration, from the tier and `DecorationData.path` rim angles),
-   chocolate curl, fondant cut-out (heart, star, blossom), daisy, rose,
-   raspberry, blueberry, cherry, topper sign (text in a new
-   `DecorationData.text` field, shown with Label3D).
-3. One `decoration.gdshader`: per-instance tint through MultiMesh
-   `INSTANCE_CUSTOM`, with vertex-colour alpha as the "tintable" mask (so a
-   daisy's yellow middle stays yellow); roughness/metallic/clearcoat/pearl
-   sheen as uniforms per definition. A flame shader for candles.
-4. `DecorationLayer` per `TierView` (`decoration_root` exists): one
-   MultiMeshInstance3D per definition (rebuilt once per frame when dirty),
-   separate nodes for drips/toppers/scene overrides, candle flames as a
-   MultiMesh plus one flickering light per tier. `CakeView` must connect
-   `decoration_added` / `decoration_removed` (it does not yet) and rebuild
-   decorations on `reset`.
-5. `DecorationTool` (V): ghost preview, click / line / scatter brush (re-pick
-   the surface under each sprayed item) / rim drag; one
-   `AddDecorationsCommand` per press. Register it in `main.gd` (that
-   enables the greyed-out button) and add a `DecorationShelf` (category
-   pills, item cards with thumbnails, sizes, sign text field).
-6. Generalise `TipThumbnails` into a renderer for decoration thumbnails.
-7. Data files in `data/decorations/` (about 17: rainbow sprinkles, confetti,
-   sugar pearls, gold and silver dragées, ganache drip, chocolate curls,
-   three fondant shapes, daisy, rose, raspberry, blueberry, cherry, candle,
-   topper sign), tests (valid content, meshes sound, undo/redo exact,
-   decorations follow a resized tier), input test step, screenshots, notes.
-
-The overall plan for E to H follows.
+1. An `AudioManager` (autoload or a node in `main.gd`) that plays short
+   sounds made in code at start-up (AudioStreamWAV from generated samples):
+   a soft squeeze loop whose volume follows `PipingTool.flow_changed`, a
+   sprinkle patter for SCATTER placement, little clicks for pearls and
+   candies (`DecorationTool.placed`), a soft thunk when a tier lands
+   (`CakeView.tier_added_visual`), a whoosh for undo/redo
+   (`ToolController.undo_performed` / `redo_performed`) and UI taps
+   (`IconButton.tapped`, card presses). A master volume setting.
+2. Juice: a small pop (scale spring) for placed decorations, a puff of
+   sugar-dust particles where a coat lands (`CoatTool.coat_applied`) and
+   when the spatula finishes (`SpatulaTool.fully_smooth`), a gentle camera
+   nudge (`OrbitCamera.nudge`) when a tier drops in, and a short cream
+   fade-in at launch that hides the first-second shader compile stutter.
+3. `docs/CREDITS.md` for any CC0 clips (none so far: everything is made in
+   code).
 
 **Remaining milestones** (from the original brief, in order):
 
-- **E. Decorations** as data in `data/decorations/`. `DecorationData` and
-  `AddDecorationsCommand` already exist; `Content.decorations()` expects
-  resources that have `category`, `sort_order`, `id` and `validate()`.
-  - Items: sprinkles (scatter brush, drawn with MultiMesh), sugar pearls and
-    metallic dragées, candles with a flickering flame and a light, ganache
-    drip along the rim (stored as rim angles in `DecorationData.path`),
-    chocolate curls, fondant cut-outs, daisy, rose, berry, cherry, topper
-    sign.
-  - Each is a builder resource, with an optional `.glb` scene override.
-  - Enable the greyed-out Decorations button.
-- **F. Juice and audio:**
-  - An audio manager with procedurally generated sounds: squeeze loop,
-    sprinkle patter, pearl clicks, tier thunk, undo, UI taps.
-  - Placement pops, particle puffs and camera nudges (`OrbitCamera.nudge`
-    already exists).
-  - Credit any CC0 clips in `docs/CREDITS.md`.
+- **F. Juice and audio** (see the steps just above).
 - **G. UI polish and photo mode:**
-  - Bigger icons, tip and decoration thumbnails, better tooltips.
+  - Bigger icons, nicer tooltips, a way to pick up or erase a single
+    decoration, and a check of every shelf at 1280x720 and 2560x1440.
   - A graphics quality option (SSAO, depth of field, glow, render scale)
     for weaker or throttling laptops (see Performance).
   - Photo mode: UI hidden, freer camera, click to focus, saves a PNG to
     `user://screenshots`.
 - **H. Save/load and tests:**
   - Versioned JSON of tiers, strokes and decorations. Every data class
-    already has `to_dict` / `from_dict`.
+    already has `to_dict` / `from_dict` (strokes keep their click
+    direction, decorations their words and drip angles).
   - A save/load panel and autosave.
   - A save/load round-trip test.
 
@@ -103,6 +68,11 @@ The overall plan for E to H follows.
   still works).
 - Tip thumbnails are rendered in white and tinted on the card, so changing
   colour never re-renders them.
+- Decorations draw with one MultiMesh per kind per tier; only drips and
+  signs (built to fit, or with their own words) are separate meshes.
+- A ganache drip that goes all the way round covers the whole top.
+- Candles and toppers only go on top surfaces; the ghost fades where a
+  piece is not allowed.
 - Single-click shapes point along the camera's right at the moment of the
   click, and that direction is saved with the stroke.
 
@@ -119,6 +89,7 @@ The overall plan for E to H follows.
 | --- | --- |
 | Left-drag on the cake | Pipe |
 | Left-click on the cake | A dot / kiss / single stamp (hold still to make it bigger) |
+| Decorations: click / drag / hold | Place one, a string (pearls), a spray (sprinkles), or drag along the rim (drips) |
 | Right-drag | Orbit the camera |
 | Mouse wheel | Zoom |
 | Middle-drag | Pan up and down |
@@ -168,6 +139,9 @@ Everything is created from code; there are no hand-made models.
 - **Smoothing scraper (F)**: hold it against a coated tier and let the cake
   spin under it (A / D or the ring), or drag along the side. Spatula marks fade
   to a glass-smooth finish; one undo step per press.
+- **Decorations (V)**: pick a tab and an item on the shelf, then click,
+  drag or hold on the cake (see "The decorations" below). Colours come from
+  the palette unless the item has its own (cherries, gold, rainbow mixes).
 - **Tiers (T)**: click a tier to select it, then pick a width (Petite, Small,
   Medium, Large) and height (Short, Classic, Tall), add a tier on top or
   remove one. Piping and decorations on a resized tier move with its surface.
@@ -222,6 +196,65 @@ geometry). **After adding any new script with a `class_name`, run the
 editor import once** (`--headless --path . --import`), or the game fails to
 start with "Identifier not declared".
 
+## The decorations
+
+Eighteen decorations, all data in `data/decorations/` (one
+`DecorationDefinition` each), in seven shelf tabs:
+
+| Tab | Decorations | How you place them |
+| --- | --- | --- |
+| Sprinkles | rainbow sprinkles, confetti, nonpareils | hold and move to spray |
+| Pearls | sugar pearls, gold and silver dragées | click for one, drag for a string |
+| Chocolate | ganache drip, chocolate curls | drag along a tier's top edge / spray |
+| Fondant | heart, star, blossom | click (they face up the screen) |
+| Flowers | daisy, rose | click |
+| Fruit | raspberry, blueberry, cherry | click |
+| Candles & toppers | candle (lit), topper sign with your own words | click, top of a tier only |
+
+How it works:
+
+- **Definition** (`scripts/decorations/decoration_definition.gd`): what it
+  is (id, name, tab, tags), how it is placed (`placement` SINGLE / LINE /
+  SCATTER / RIM, `align` on the surface or upright, `facing` random or
+  toward the viewer, `top_only`, spacing, spray radius and rate, sink, tilt
+  and size jitter), how it looks (`builder`, optional `scene_override`
+  .glb, `color_mode` PICKED / FIXED / MIX with `colors`, roughness,
+  metallic, clearcoat, subsurface, pearl sheen, shadows) and its three sizes.
+- **Builders** (`scripts/decorations/builders/`) make one piece at size 1
+  with `MeshArrays`; vertex colour alpha marks the parts that take the
+  piece's colour (a daisy's yellow middle keeps its own). Drips and topper
+  signs are "unique": built per placed piece (drips from the tier's size and
+  the rim angles in `DecorationData.path`; signs with `DecorationData.text`
+  shown by a Label3D).
+- **Drawing** (`DecorationLayer`, one per tier and one for the stand's
+  plate): one MultiMesh per kind, with each piece's colour and a random
+  number in the instance custom data (`art/shaders/decoration.gdshader`).
+  Candle flames are one MultiMesh of billboards
+  (`art/shaders/candle_flame.gdshader`) plus one flickering warm light per
+  tier. Changes are applied once per frame, or at once with `flush()`.
+- **Tool** (`DecorationTool`, key V): a translucent ghost shows the piece
+  before you click (faded where it is not allowed); sprays re-pick the
+  surface under every sprinkle so they land on piping, over the edge and on
+  the stand; drips follow the cursor round the rim, and spinning the cake
+  while holding pours further round. Everything from one press is one undo
+  step (shown in a temporary layer while the button is held).
+- **Shelf**: tabs over 3D cards (pictures by `ThumbnailRenderer`, the same
+  one the tips use), three sizes, a hint for the current item, and the words
+  for the topper sign.
+- Decorations on a resized tier move with its surface (`ItemRemap`); drips
+  rebuild to fit.
+
+## Adding a new decoration
+
+1. Copy a file in `data/decorations/` and change `id`, `display_name`,
+   `description`, `category` (one of the tabs in
+   `DecorationDefinition.CATEGORIES`) and `sort_order`.
+2. Pick a builder and its numbers (a new shape needs a small
+   `DecorationBuilder` subclass with `build()` and `radius()`), the placement
+   settings and the look.
+3. Run the import once if you added a script, then the tests (every
+   decoration is checked for valid data and sound geometry).
+
 ## Adding tier sizes or colours
 
 - Tier sizes: add a `.tres` in `data/tiers/` (copy one): `kind` 0 = width
@@ -242,6 +275,8 @@ start with "Identifier not declared".
 - Shadow layout comparison: `... --path . -- --scenario=shadow_sweep`
 - Tier demo: `... --path . -- --scenario=tiers --shots=C:/some/folder`
 - Every tip on one cake: `... --path . -- --scenario=tips --shots=C:/some/folder --angles=overhead,close`
+- Every decoration on a two-tier cake: `... --path . -- --scenario=decorations --shots=C:/some/folder --angles=front,close,high`
+- Decorated cake benchmark: `... --path . -- --scenario=deco_bench`
 - Extra flags: `--ui=true` keeps the interface in shots, `--tools=true` shows
   the piping bag, `--tool=tiers` picks a tool first.
 - Benchmarks at a tiny window (`--resolution 384x216` before `--`) show the
@@ -320,21 +355,24 @@ a long stroke cost ~39 ms. What changed then:
 
 ## Known issues
 
-- Decorations are not pickable yet (piping goes through to the surface
-  underneath); planned with E if needed.
-- Single decorations can only be removed with undo or Clear all; a "pick
-  up" or eraser is worth adding (E or G).
+- Decorations are not pickable (you cannot pipe on top of a fondant heart;
+  the piping lands on the cake underneath).
+- A single decoration can only be removed with undo or Clear all; a "pick
+  up" or eraser is planned for G.
 - Start-up: the first second can stutter while shaders compile; a short
-  cream fade-in at launch would hide it (F or G).
+  cream fade-in at launch would hide it (planned for F).
 - Clicks with the petal and ruffle tips lean one way or the other depending
   on drag direction (like a real slanted tip); possibly worth an "always
   thin edge up" option.
-- The interface layout is in place but still needs its polish pass
-  (bigger icons, thumbnails for tips, nicer tooltips).
-- The decorations button is greyed out until the decorations milestone.
+- The topper sign's words come from a system font (Segoe UI); a bundled
+  cosy font would look better (G).
+- The interface still needs its polish pass (bigger icons, nicer tooltips,
+  checks at other window sizes).
+- On battery the laptop throttles to about half speed (heavy cake ~90 fps
+  instead of ~150). Compare benchmark numbers only side by side.
 - The end-to-end input test failed once, on its first run right after a fresh
-  import (shaders were still compiling, so frames stalled). It passed on the
-  next three runs. If it fails, run it again before investigating.
+  import (shaders were still compiling, so frames stalled). If it fails, run
+  it again before investigating.
 - Photo mode is still the simple "save a picture" from the look test (P key or
   the camera button).
 
@@ -345,6 +383,17 @@ a long stroke cost ~39 ms. What changed then:
 
 ## Milestone log
 
+- **E. Decorations.** Eighteen decorations as data in seven shelf tabs:
+  sprinkles, confetti, nonpareils, sugar pearls, gold and silver dragées,
+  ganache drip, chocolate curls, fondant heart / star / blossom, daisy,
+  rose, raspberry, blueberry, cherry, lit candles and a topper sign with
+  your own words. `DecorationDefinition` + builders, `DecorationLayer`
+  (MultiMesh per kind, flames and a candle light per tier),
+  `DecorationTool` (click, string, spray, rim drag; ghost preview; one undo
+  step per press), a tabbed shelf with 3D cards (`ThumbnailRenderer`, now
+  shared with the tips). Decoration tests, input test steps, showcase and
+  benchmark scenarios. The per-tip speed test now compares with the round
+  tip so it does not fail on battery.
 - **D. The ten tips.** Closed star, shell, drop flower, leaf, petal, ruffle,
   basketweave and grass join round and open star, all as data. New
   `LeafProfile`, `PetalProfile` (with a frill for ruffles), `RibbonProfile`,

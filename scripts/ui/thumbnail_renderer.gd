@@ -1,11 +1,14 @@
-class_name TipThumbnails
+class_name ThumbnailRenderer
 extends Node
-## Renders a small 3D picture of what each piping tip makes (a short wavy
-## line, a few stamps, or a click shape), once, in a hidden mini scene with
-## its own light. The frosting is rendered white so the tip cards can tint it
-## with the current colour without rendering again.
+## Renders small 3D pictures for the shelf cards, once each, in a hidden mini
+## scene with its own light: what each piping tip makes (a short wavy line, a
+## few stamps, or a click shape) and what each decoration looks like.
+## Anything taking the picked colour is rendered white so the cards can tint
+## it without rendering again. Requests are queued and done one after
+## another, a couple of frames each.
 
-signal rendered(tip: TipDefinition, texture: Texture2D)
+## A picture is ready. `key` is what was asked for (a tip or a decoration).
+signal rendered(key: Resource, texture: Texture2D)
 
 const SIZE: int = 160
 const RADIUS: float = 0.07
@@ -13,30 +16,49 @@ const RADIUS: float = 0.07
 var _viewport: SubViewport
 var _holder: MeshInstance3D
 var _camera: Camera3D
+var _queue: Array = []
+var _working: bool = false
 
 
-## Renders every tip, a frame or two each, emitting `rendered` as each is done.
-## Does nothing without a real renderer (headless tests).
-func render_all(tips: Array[TipDefinition]) -> void:
-	if DisplayServer.get_name() == "headless":
-		return
-	_build_stage()
+## Queues a picture of every tip.
+func render_tips(tips: Array[TipDefinition]) -> void:
 	for tip in tips:
-		_holder.mesh = _sample_mesh(tip)
+		_queue.append([tip, _sample_mesh(tip)])
+	_work()
+
+
+## Queues a picture of every decoration.
+func render_decorations(definitions: Array[Resource]) -> void:
+	for definition: Resource in definitions:
+		_queue.append([definition, (definition as DecorationDefinition).preview_mesh()])
+	_work()
+
+
+## Renders the queue, emitting `rendered` as each picture is done. Does
+## nothing without a real renderer (headless tests).
+func _work() -> void:
+	if _working or DisplayServer.get_name() == "headless":
+		return
+	_working = true
+	_build_stage()
+	while not _queue.is_empty():
+		var job: Array = _queue.pop_front()
+		_holder.mesh = job[1]
 		_frame(_holder.get_aabb())
 		_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 		await RenderingServer.frame_post_draw
 		await RenderingServer.frame_post_draw
 		var image: Image = _viewport.get_texture().get_image()
 		image.generate_mipmaps()
-		rendered.emit(tip, ImageTexture.create_from_image(image))
+		rendered.emit(job[0], ImageTexture.create_from_image(image))
 	_viewport.queue_free()
 	_viewport = null
+	_working = false
 
 
 func _build_stage() -> void:
 	_viewport = SubViewport.new()
-	_viewport.name = "TipThumbnailStage"
+	_viewport.name = "ThumbnailStage"
 	_viewport.size = Vector2i(SIZE, SIZE)
 	_viewport.own_world_3d = true
 	_viewport.transparent_bg = true

@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/topper_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+width = 0.56
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"topper_sign"
+display_name = "Topper Sign"
+description = "A little sign on sticks with your own words. Type them in the shelf, then click the top of a tier."
+category = &"party"
+sort_order = 2
+tags = PackedStringArray("party", "topper", "words")
+align = 1
+facing = 1
+top_only = true
+sink = 0.0
+size_jitter = 0.0
+roughness = 0.6

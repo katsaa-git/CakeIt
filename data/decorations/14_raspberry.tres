@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/berry_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+kind = 0
+size = 0.17
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"raspberry"
+display_name = "Raspberry"
+description = "A fresh raspberry."
+category = &"fruit"
+sort_order = 1
+tags = PackedStringArray("fruit", "berry", "fresh")
+sink = 0.05
+max_tilt = 15.0
+color_mode = 1
+colors = PackedColorArray(0.86, 0.2, 0.32, 1)
+roughness = 0.35
+subsurface = 0.4

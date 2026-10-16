@@ -52,6 +52,16 @@ func _run() -> void:
 			_build_showcase(context)
 		"tips":
 			_build_tip_sampler(context)
+		"decorations":
+			_build_decorated(context)
+		"deco_bench":
+			_build_decorated(context)
+			await _wait_for_cake(context)
+			DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+			Engine.max_fps = 0
+			context.turntable.auto_spin = true
+			await _measure(context, 1.0, func(_t: float) -> void: pass)
+			print("BENCH decorated cake, spinning: %s" % _describe(await _measure(context, 5.0, func(_t: float) -> void: pass)))
 		"tiers":
 			await _build_tiers(context)
 		"input_test":
@@ -82,7 +92,7 @@ func _run() -> void:
 		(main.get("tools") as ToolController).select_tool(StringName(args["tool"]))
 	if args.has("shots"):
 		await _take_shots(context)
-	if args.has("shots") or scenario == "bench" or scenario == "sweep" or scenario == "shadow_sweep" or scenario == "set_sweep" or scenario == "input_test":
+	if args.has("shots") or scenario == "bench" or scenario == "sweep" or scenario == "shadow_sweep" or scenario == "set_sweep" or scenario == "deco_bench" or scenario == "input_test":
 		get_tree().quit()
 
 
@@ -504,6 +514,7 @@ func _input_test(context: EditorContext) -> void:
 	await get_tree().process_frame
 	_expect(model.tiers.size() == 1, "undo add tier")
 	await _input_test_tools(context)
+	await _input_test_decorations(context)
 	print("INPUT_TEST %s (%d failures)" % ["PASSED" if _input_failures == 0 else "FAILED", _input_failures])
 
 
@@ -785,3 +796,133 @@ func _build_tip_sampler(context: EditorContext) -> void:
 	_add(context, DemoCake.side_ring(model, tier, 0.42, &"ruffle", 1, Color(0.97, 0.72, 0.78), 0.0, 0, 1.0))
 	_add(context, DemoCake.side_ring(model, tier, 0.78, &"drop_flower", 1, Color(0.74, 0.8, 0.95), 0.0, 0, 1.0))
 	_add(context, DemoCake.top_ring(model, tier, tier.radius - 0.06, &"closed_star", 0, Color(1.0, 0.97, 0.92), 1.03))
+
+
+## A two-tier cake wearing every kind of decoration: a chocolate drip, candles
+## and a sign on top, roses, daisies and berries between the tiers, a pearl
+## string, fondant shapes and dragees on the sides, sprinkles and curls.
+func _build_decorated(context: EditorContext) -> void:
+	var model: CakeModel = context.model
+	var tool: DecorationTool = (main.get("tools") as ToolController).tools[&"decorate"]
+	var bottom: TierData = model.tiers[0]
+	context.commands.run(TierCommands.CoatTier.new(model, bottom.id, Color(0.98, 0.84, 0.86), true, 0.85, false))
+	main.call("add_tier")
+	var top: TierData = model.tiers[1]
+	context.commands.run(TierCommands.CoatTier.new(model, top.id, Color(1.0, 0.96, 0.9), true, 0.9, false))
+	var d: Callable = func(id: StringName) -> DecorationDefinition: return Content.decoration(id) as DecorationDefinition
+	var front: float = _front_angle(context)
+	# Ganache over the top tier, all the way round.
+	context.set_color(Color(0.36, 0.22, 0.15))
+	tool.pour_drip(d.call(&"ganache_drip"), top.id, 0.0, TAU)
+	# Candles in an arc at the front of the top, the sign standing behind them
+	# and a cherry in the middle.
+	context.set_color(Color(0.62, 0.78, 0.95))
+	for i in range(5):
+		var a: float = front + (float(i) - 2.0) * 0.42
+		tool.place_one(d.call(&"candle"), top.id, Vector3(cos(a) * 0.55, top.height + 0.03, sin(a) * 0.55), Vector3.UP)
+	context.set_color(Color(1.0, 0.97, 0.92))
+	context.decoration_text = "Happy Birthday!"
+	tool.place_one(d.call(&"topper_sign"), top.id, Vector3(cos(front + PI) * 0.5, top.height + 0.03, sin(front + PI) * 0.5), Vector3.UP)
+	tool.place_one(d.call(&"cherry"), top.id, Vector3(0.0, top.height + 0.03, 0.0), Vector3.UP)
+	# Flowers and fruit on the ledge between the tiers.
+	var ledge: float = (bottom.radius + top.radius) * 0.5
+	var flowers: Array[StringName] = [&"rose", &"raspberry", &"daisy", &"blueberry", &"rose", &"cherry", &"daisy", &"raspberry"]
+	for i in range(16):
+		var a: float = front - 1.2 + float(i) * 0.16
+		var id: StringName = flowers[i % flowers.size()]
+		context.set_color(Color(0.93, 0.5, 0.6) if id == &"rose" else Color(1.0, 0.98, 0.95))
+		tool.place_one(d.call(id), bottom.id, Vector3(cos(a) * ledge, bottom.height, sin(a) * ledge), Vector3.UP)
+	# A string of pearls round the bottom of the bottom tier.
+	context.set_color(Color(1.0, 0.98, 0.95))
+	var pearls: DecorationDefinition = d.call(&"sugar_pearls")
+	var step: float = pearls.spacing * pearls.radius() / bottom.radius
+	var angle: float = 0.0
+	while angle < TAU:
+		var n := Vector3(cos(angle), 0.0, sin(angle))
+		tool.place_one(pearls, bottom.id, n * bottom.radius + Vector3(0.0, 0.08, 0.0), n)
+		angle += step
+	# Fondant shapes and gold dragees on the sides.
+	context.set_color(Color(0.98, 0.98, 0.96))
+	var shapes: Array[StringName] = [&"fondant_heart", &"fondant_star", &"fondant_blossom"]
+	for i in range(9):
+		var a: float = front - 1.0 + float(i) * 0.25
+		var n := Vector3(cos(a), 0.0, sin(a))
+		tool.place_one(d.call(shapes[i % 3]), bottom.id, n * bottom.radius + Vector3(0.0, bottom.height * 0.5, 0.0), n)
+		tool.place_one(d.call(&"gold_dragees"), bottom.id, n * bottom.radius + Vector3(0.0, bottom.height * 0.5 + 0.18, 0.0), n)
+	# Rainbow sprinkles on the stand's plate, and chocolate curls.
+	var sprinkles: DecorationDefinition = d.call(&"rainbow_sprinkles")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
+	for i in range(260):
+		var a: float = front - 1.3 + rng.randf() * 2.6
+		var r: float = rng.randf_range(bottom.radius + 0.12, Turntable.PLATE_RADIUS - 0.15)
+		tool.place_one(sprinkles, CakeModel.BOARD_ID, Vector3(cos(a) * r, 0.0, sin(a) * r), Vector3.UP)
+	for i in range(6):
+		var a: float = front + 0.9 + float(i) * 0.12
+		tool.place_one(d.call(&"chocolate_curls"), CakeModel.BOARD_ID, Vector3(cos(a) * 1.85, 0.0, sin(a) * 1.85), Vector3.UP)
+	context.set_color((Content.palette(&"frosting") as SwatchPalette).colors[0])
+	print("DECORATED: %d decorations" % model.decorations.size())
+
+
+## Decorations through real mouse and keyboard input: a click places a
+## cherry, a sprinkle drag is one undo step, a drag along the rim pours a
+## drip, and a candle is refused on the side of a tier.
+func _input_test_decorations(context: EditorContext) -> void:
+	var model: CakeModel = context.model
+	context.turntable.stop()
+	_send_key(KEY_V, false)
+	await get_tree().process_frame
+	_expect(context.tool_id == &"decorate", "V selects the decorations tool")
+	var tier: TierData = model.tiers[0]
+	var front: float = _front_angle(context)
+	var on_top: Callable = func(r: float, offset: float) -> Vector2:
+		var a: float = front + offset
+		return _screen_of(context, Vector3(cos(a) * r, model.tier_base_y(tier.id) + tier.height, sin(a) * r))
+
+	context.set_decoration(Content.decoration(&"cherry"))
+	var before: int = model.decorations.size()
+	await _click(on_top.call(tier.radius * 0.5, 0.0))
+	_expect(model.decorations.size() == before + 1, "a click places a cherry")
+	if model.decorations.size() == before + 1:
+		var cherry: DecorationData = model.decorations[model.decorations.size() - 1]
+		_expect(cherry.tier_id == tier.id and absf(cherry.transform.origin.y - tier.height) < 0.05, "the cherry sits on top of the tier (y %.3f)" % cherry.transform.origin.y)
+		_expect(cherry.color.is_equal_approx((Content.decoration(&"cherry") as DecorationDefinition).colors[0]), "a cherry keeps its own red")
+	_send_key(KEY_Z, true)
+	await get_tree().process_frame
+	_expect(model.decorations.size() == before, "undo takes the cherry off")
+	_send_key(KEY_Y, true)
+	await get_tree().process_frame
+
+	context.set_decoration(Content.decoration(&"rainbow_sprinkles"))
+	before = model.decorations.size()
+	var path: Array[Vector2] = []
+	for i in range(40):
+		path.append(on_top.call(tier.radius * 0.45, -0.4 + float(i) * 0.02))
+	await _drag(path)
+	var sprayed: int = model.decorations.size() - before
+	_expect(sprayed > 10, "a drag sprinkles lots of sprinkles (%d)" % sprayed)
+	_send_key(KEY_Z, true)
+	await get_tree().process_frame
+	_expect(model.decorations.size() == before, "one undo takes the whole sprinkle drag back")
+
+	context.set_decoration(Content.decoration(&"ganache_drip"))
+	before = model.decorations.size()
+	var rim: Array[Vector2] = []
+	for i in range(30):
+		rim.append(on_top.call(tier.radius - 0.06, -0.45 + float(i) * 0.03))
+	await _drag(rim)
+	_expect(model.decorations.size() == before + 1, "a drag along the rim pours one drip")
+	if model.decorations.size() == before + 1:
+		var drip: DecorationData = model.decorations[model.decorations.size() - 1]
+		var span: Vector2 = DripBuilder.span(drip.path)
+		_expect(span.y - span.x > 0.5, "the drip covers the dragged stretch of rim (%.2f rad)" % (span.y - span.x))
+	_send_key(KEY_Z, true)
+	await get_tree().process_frame
+
+	context.set_decoration(Content.decoration(&"candle"))
+	before = model.decorations.size()
+	var side: Vector2 = _front_of(context, tier, 0.5)
+	await _click(side)
+	_expect(model.decorations.size() == before, "a candle is not placed on the side of a tier")
+	_send_key(KEY_B, false)
+	await get_tree().process_frame

@@ -13,6 +13,7 @@ signal decoration_changed(definition: Resource)
 signal message(text: String)
 signal tier_selection_changed(tier_id: int)
 signal coat_style_changed(naked: bool)
+signal decoration_size_changed(index: int)
 
 var model: CakeModel
 var commands: CommandStack
@@ -35,6 +36,9 @@ var pointer_over_ui: bool = false
 var selected_tier_id: int = 0
 ## Coat tool: true applies the semi-naked sponge look instead of a full coat.
 var coat_naked: bool = false
+## Decorations: the chosen size preset (0..2) and the words for topper signs.
+var decoration_size_index: int = 1
+var decoration_text: String = "Happy Birthday!"
 
 
 func set_tool(id: StringName) -> void:
@@ -105,3 +109,8 @@ func select_tier(tier_id: int) -> void:
 func set_coat_naked(naked: bool) -> void:
 	coat_naked = naked
 	coat_style_changed.emit(naked)
+
+
+func set_decoration_size_index(index: int) -> void:
+	decoration_size_index = clampi(index, 0, 2)
+	decoration_size_changed.emit(decoration_size_index)

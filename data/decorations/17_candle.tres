@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/candle_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+stripes = 2
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"candle"
+display_name = "Candle"
+description = "A striped birthday candle, lit. Goes on top of a tier."
+category = &"party"
+sort_order = 1
+tags = PackedStringArray("party", "birthday", "candle")
+align = 1
+top_only = true
+sink = 0.15
+size_jitter = 0.0
+roughness = 0.55
+subsurface = 0.2

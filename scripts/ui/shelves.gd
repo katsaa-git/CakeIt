@@ -93,8 +93,9 @@ class PipeShelf extends HBoxContainer:
 		context.color_changed.connect(_on_color)
 		_refresh()
 
-	func set_thumbnail(tip: TipDefinition, texture: Texture2D) -> void:
-		if _cards.has(tip.id):
+	func set_thumbnail(key: Resource, texture: Texture2D) -> void:
+		var tip := key as TipDefinition
+		if tip != null and _cards.has(tip.id):
 			(_cards[tip.id] as TipCard).thumbnail = texture
 
 	func _on_color(color: Color) -> void:
@@ -221,3 +222,127 @@ class TierShelf extends HBoxContainer:
 		for value: float in _height_buttons:
 			(_height_buttons[value] as Button).button_pressed = tier != null and is_equal_approx(tier.height, value)
 		_remove.disabled = context.model.tiers.size() <= 1
+
+
+## Decorations: category tabs over the items in that category, sizes, and
+## the words for a topper sign.
+class DecorationShelf extends HBoxContainer:
+	var context: EditorContext
+	var _tabs: Dictionary = {}
+	var _cards: Dictionary = {}
+	var _items: HBoxContainer
+	var _category: StringName = &""
+	var _size_buttons: Array[Button] = []
+	var _hint: Label
+	var _words: VBoxContainer
+	var _text: LineEdit
+
+	func setup(new_context: EditorContext) -> void:
+		context = new_context
+		add_theme_constant_override("separation", 14)
+		var left := VBoxContainer.new()
+		left.add_theme_constant_override("separation", 6)
+		add_child(left)
+		var tabs := HBoxContainer.new()
+		tabs.add_theme_constant_override("separation", 4)
+		left.add_child(tabs)
+		var tab_group := ButtonGroup.new()
+		for entry: Array in DecorationDefinition.CATEGORIES:
+			var category: StringName = entry[0]
+			var tab := Shelves.pill(entry[1], "", tab_group)
+			tab.custom_minimum_size = Vector2(0.0, 34.0)
+			tab.add_theme_font_size_override("font_size", 15)
+			tab.pressed.connect(func() -> void: _show_category(category))
+			tabs.add_child(tab)
+			_tabs[category] = tab
+		_items = HBoxContainer.new()
+		_items.add_theme_constant_override("separation", 2)
+		left.add_child(_items)
+		var card_group := ButtonGroup.new()
+		for res in Content.decorations():
+			var definition := res as DecorationDefinition
+			var card := TipCard.make_for(definition)
+			card.button_group = card_group
+			card.color = context.color
+			card.pressed.connect(func() -> void: context.set_decoration(definition))
+			_items.add_child(card)
+			_cards[definition.id] = card
+		add_child(Shelves.divider())
+		var sizes := Shelves.section("Size")
+		add_child(sizes)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 4)
+		sizes.add_child(row)
+		var size_group := ButtonGroup.new()
+		for i in range(3):
+			var button := Shelves.pill(str(i + 1), "Size (%d)" % (i + 1), size_group)
+			button.pressed.connect(func() -> void: context.set_decoration_size_index(i))
+			row.add_child(button)
+			_size_buttons.append(button)
+		_hint = UiTheme.caption("", true, 14)
+		_hint.custom_minimum_size = Vector2(230.0, 0.0)
+		_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		sizes.add_child(_hint)
+		_words = Shelves.section("Words on the sign")
+		_text = LineEdit.new()
+		_text.text = context.decoration_text
+		_text.max_length = 32
+		_text.custom_minimum_size = Vector2(220.0, 38.0)
+		_text.placeholder_text = "Happy Birthday!"
+		_text.text_changed.connect(func(value: String) -> void: context.decoration_text = value)
+		# Typing must not trigger shortcuts (B, C, T...); Enter or Esc gives
+		# the keys back to the cake.
+		_text.text_submitted.connect(func(_value: String) -> void: _text.release_focus())
+		_words.add_child(_text)
+		add_child(_words)
+		context.decoration_changed.connect(func(_d: Resource) -> void: _refresh())
+		context.decoration_size_changed.connect(func(_i: int) -> void: _refresh())
+		context.color_changed.connect(_on_color)
+		if context.decoration == null and not Content.decorations().is_empty():
+			context.set_decoration(Content.decorations()[0])
+		_refresh()
+
+	func set_thumbnail(key: Resource, texture: Texture2D) -> void:
+		var definition := key as DecorationDefinition
+		if definition != null and _cards.has(definition.id):
+			(_cards[definition.id] as TipCard).thumbnail = texture
+
+	func _on_color(color: Color) -> void:
+		for card: TipCard in _cards.values():
+			card.color = color
+
+	func _show_category(category: StringName) -> void:
+		_category = category
+		(_tabs[category] as Button).button_pressed = true
+		for res in Content.decorations():
+			var definition := res as DecorationDefinition
+			(_cards[definition.id] as Control).visible = definition.category == category
+		var current := context.decoration as DecorationDefinition
+		if current == null or current.category != category:
+			for res in Content.decorations():
+				if (res as DecorationDefinition).category == category:
+					context.set_decoration(res)
+					break
+
+	func _refresh() -> void:
+		var definition := context.decoration as DecorationDefinition
+		if definition == null:
+			return
+		if definition.category != _category:
+			_show_category(definition.category)
+		(_cards[definition.id] as TipCard).button_pressed = true
+		for i in range(_size_buttons.size()):
+			_size_buttons[i].text = definition.preset_name(i)
+			_size_buttons[i].button_pressed = i == context.decoration_size_index
+		match definition.placement:
+			DecorationDefinition.Placement.SCATTER:
+				_hint.text = "Hold and move to sprinkle."
+			DecorationDefinition.Placement.LINE:
+				_hint.text = "Click for one, drag for a string."
+			DecorationDefinition.Placement.RIM:
+				_hint.text = "Drag along the top edge of a tier. Spin the cake to go all the way round."
+			_:
+				_hint.text = "Click to place." + (" Goes on top of a tier." if definition.top_only else "")
+		if not definition.uses_palette():
+			_hint.text += " Comes in its own colours."
+		_words.visible = definition.builder is TopperBuilder

@@ -62,6 +62,7 @@ func _ready() -> void:
 	tools.add_tool(piping)
 	tools.add_tool(CoatTool.new())
 	tools.add_tool(SpatulaTool.new())
+	tools.add_tool(DecorationTool.new())
 	tools.add_tool(TierTool.new())
 	context.set_color((Content.palette(&"frosting") as SwatchPalette).colors[0])
 

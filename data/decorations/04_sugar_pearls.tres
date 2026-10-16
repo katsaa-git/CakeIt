@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/pearl_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+size = 0.032
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"sugar_pearls"
+display_name = "Sugar Pearls"
+description = "Pearly sugar balls in the colour you pick. Click for one, drag for a string of them."
+category = &"sweets"
+sort_order = 1
+tags = PackedStringArray("pearls", "elegant")
+placement = 1
+spacing = 2.2
+sink = 0.15
+roughness = 0.25
+specular = 0.6
+clearcoat = 0.6
+pearl = 0.6

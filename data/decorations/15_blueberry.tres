@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/berry_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+kind = 1
+size = 0.11
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"blueberry"
+display_name = "Blueberry"
+description = "A plump blueberry with a dusty bloom."
+category = &"fruit"
+sort_order = 2
+tags = PackedStringArray("fruit", "berry", "fresh")
+sink = 0.05
+max_tilt = 25.0
+color_mode = 1
+colors = PackedColorArray(0.32, 0.37, 0.62, 1)
+roughness = 0.6
+subsurface = 0.15

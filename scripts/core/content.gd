@@ -37,16 +37,28 @@ static func tip(id: StringName) -> TipDefinition:
 	return found
 
 
-## Decoration definitions, sorted by category then order.
+## Decoration definitions, sorted by category (shelf tab order) then order.
 static func decorations() -> Array[Resource]:
 	if _decorations.is_empty():
 		for res in _load_all(DECORATIONS_DIR):
 			if res.has_method("validate") and "category" in res:
 				_decorations.append(res)
-		_decorations.sort_custom(func(a: Resource, b: Resource) -> bool: return a.get("sort_order") < b.get("sort_order"))
+		_decorations.sort_custom(func(a: Resource, b: Resource) -> bool:
+			var rank_a: int = _category_rank(a.get("category"))
+			var rank_b: int = _category_rank(b.get("category"))
+			if rank_a != rank_b:
+				return rank_a < rank_b
+			return a.get("sort_order") < b.get("sort_order"))
 		for deco in _decorations:
 			_decorations_by_id[deco.get("id")] = deco
 	return _decorations
+
+
+static func _category_rank(category: StringName) -> int:
+	for i in range(DecorationDefinition.CATEGORIES.size()):
+		if DecorationDefinition.CATEGORIES[i][0] == category:
+			return i
+	return DecorationDefinition.CATEGORIES.size()
 
 
 static func decoration(id: StringName) -> Resource:

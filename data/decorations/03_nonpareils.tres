@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/sprinkle_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+shape = 2
+length = 0.02
+thickness = 0.02
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"nonpareils"
+display_name = "Nonpareils"
+description = "Tiny sugar balls in the colour you pick. Hold and drag to scatter."
+category = &"sprinkles"
+sort_order = 3
+tags = PackedStringArray("sprinkles")
+placement = 2
+brush_radius = 0.18
+rate = 240.0
+sink = 0.2
+roughness = 0.3
+clearcoat = 0.4
+casts_shadow = false
