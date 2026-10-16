@@ -9,7 +9,48 @@ to extend it, and what still needs work. Newest milestone first in the log.
 performance), B (turntable, tiers, coat, spatula, interface layout), C
 (lighting, set and look) and D (the ten piping tips).
 
-**Next: milestone E (decorations).** The plan for E to H is below.
+**Next: milestone E (decorations). Not started; no E code exists yet.**
+Session 2 ended (paused at the owner's request) right after committing D.
+
+**Exact next steps for E** (design worked out, not yet written):
+
+1. `DecorationDefinition` resource (`scripts/decorations/`): id,
+   display_name, description, `category`, `sort_order`, tags, `placement`
+   (SINGLE click, LINE evenly spaced along a drag, SCATTER brush, RIM drag
+   along a tier's top edge), `builder`, optional `scene_override` (.glb),
+   `color_mode` (PICKED from the palette, FIXED, MIX of `colors`), size
+   presets, `spacing`, `brush_radius`, `sink`, alignment (on the surface /
+   upright), facing (random spin / toward the viewer), top-only flag,
+   `validate()`.
+2. `DecorationBuilder` subclasses that build one mesh at size 1: sprinkle
+   rod, confetti disc, pearl/dragée sphere, candle (+ flame offset), drip
+   (per decoration, from the tier and `DecorationData.path` rim angles),
+   chocolate curl, fondant cut-out (heart, star, blossom), daisy, rose,
+   raspberry, blueberry, cherry, topper sign (text in a new
+   `DecorationData.text` field, shown with Label3D).
+3. One `decoration.gdshader`: per-instance tint through MultiMesh
+   `INSTANCE_CUSTOM`, with vertex-colour alpha as the "tintable" mask (so a
+   daisy's yellow middle stays yellow); roughness/metallic/clearcoat/pearl
+   sheen as uniforms per definition. A flame shader for candles.
+4. `DecorationLayer` per `TierView` (`decoration_root` exists): one
+   MultiMeshInstance3D per definition (rebuilt once per frame when dirty),
+   separate nodes for drips/toppers/scene overrides, candle flames as a
+   MultiMesh plus one flickering light per tier. `CakeView` must connect
+   `decoration_added` / `decoration_removed` (it does not yet) and rebuild
+   decorations on `reset`.
+5. `DecorationTool` (V): ghost preview, click / line / scatter brush (re-pick
+   the surface under each sprayed item) / rim drag; one
+   `AddDecorationsCommand` per press. Register it in `main.gd` (that
+   enables the greyed-out button) and add a `DecorationShelf` (category
+   pills, item cards with thumbnails, sizes, sign text field).
+6. Generalise `TipThumbnails` into a renderer for decoration thumbnails.
+7. Data files in `data/decorations/` (about 17: rainbow sprinkles, confetti,
+   sugar pearls, gold and silver dragées, ganache drip, chocolate curls,
+   three fondant shapes, daisy, rose, raspberry, blueberry, cherry, candle,
+   topper sign), tests (valid content, meshes sound, undo/redo exact,
+   decorations follow a resized tier), input test step, screenshots, notes.
+
+The overall plan for E to H follows.
 
 **Remaining milestones** (from the original brief, in order):
 
@@ -56,6 +97,14 @@ performance), B (turntable, tiers, coat, spatula, interface layout), C
 - Render settings were chosen by measuring each one (see Performance).
 - Strokes and decorations stay sorted by id, so undo/redo restores exactly
   the same lists.
+- The room is closed on all sides (a wall behind the camera that is never on
+  screen) so metal and glossy surfaces reflect a room, not black.
+- Static props are merged per group, never into one huge mesh (so culling
+  still works).
+- Tip thumbnails are rendered in white and tinted on the card, so changing
+  colour never re-renders them.
+- Single-click shapes point along the camera's right at the moment of the
+  click, and that direction is saved with the stroke.
 
 ## Engine version
 
@@ -271,6 +320,15 @@ a long stroke cost ~39 ms. What changed then:
 
 ## Known issues
 
+- Decorations are not pickable yet (piping goes through to the surface
+  underneath); planned with E if needed.
+- Single decorations can only be removed with undo or Clear all; a "pick
+  up" or eraser is worth adding (E or G).
+- Start-up: the first second can stutter while shaders compile; a short
+  cream fade-in at launch would hide it (F or G).
+- Clicks with the petal and ruffle tips lean one way or the other depending
+  on drag direction (like a real slanted tip); possibly worth an "always
+  thin edge up" option.
 - The interface layout is in place but still needs its polish pass
   (bigger icons, thumbnails for tips, nicer tooltips).
 - The decorations button is greyed out until the decorations milestone.
