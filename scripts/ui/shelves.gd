@@ -93,6 +93,10 @@ class PipeShelf extends HBoxContainer:
 		context.color_changed.connect(_on_color)
 		_refresh()
 
+	func set_thumbnail(tip: TipDefinition, texture: Texture2D) -> void:
+		if _cards.has(tip.id):
+			(_cards[tip.id] as TipCard).thumbnail = texture
+
 	func _on_color(color: Color) -> void:
 		for card: TipCard in _cards.values():
 			card.color = color

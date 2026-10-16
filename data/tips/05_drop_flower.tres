@@ -1,0 +1,38 @@
+[gd_resource type="Resource" script_class="TipDefinition" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/piping/tip_definition.gd" id="1_tip"]
+[ext_resource type="Script" path="res://scripts/piping/profiles/star_profile.gd" id="2_profile"]
+[ext_resource type="Script" path="res://scripts/piping/stamps/drop_flower_stamp.gd" id="3_stamp"]
+
+[sub_resource type="Resource" id="Profile_drop_flower"]
+script = ExtResource("2_profile")
+points = 5
+depth = 0.55
+ridge_fullness = 0.55
+squash = 1.0
+sides = 50
+
+[sub_resource type="Resource" id="Stamp_drop_flower"]
+script = ExtResource("3_stamp")
+height = 0.85
+spread = 1.25
+twist = 0.8
+
+[resource]
+script = ExtResource("1_tip")
+id = &"drop_flower"
+display_name = "Drop Flower"
+description = "Click for a little swirled flower with a sunny middle. Drag to scatter a row of them."
+sort_order = 5
+tags = PackedStringArray("floral", "flower")
+profile = SubResource("Profile_drop_flower")
+behavior = 1
+stamp = SubResource("Stamp_drop_flower")
+stamp_spacing = 2.8
+ring_spacing = 0.3
+speed_thinning = 0.0
+dwell_growth = 0.5
+size_names = PackedStringArray("Small", "Medium", "Large")
+size_presets = PackedFloat32Array(0.05, 0.075, 0.105)
+min_size = 0.03
+max_size = 0.16

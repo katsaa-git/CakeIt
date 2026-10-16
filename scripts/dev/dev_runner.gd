@@ -18,6 +18,7 @@ const ANGLES: Dictionary = {
 	"side": [1.4, 0.18, 6.0, 0.0],
 	"low": [-0.3, 0.08, 5.4, -0.2],
 	"wide": [0.35, 0.3, 11.5, 0.0],
+	"overhead": [0.35, 1.2, 4.4, -0.1],
 }
 
 var main: Node3D
@@ -49,6 +50,8 @@ func _run() -> void:
 	match scenario:
 		"showcase":
 			_build_showcase(context)
+		"tips":
+			_build_tip_sampler(context)
 		"tiers":
 			await _build_tiers(context)
 		"input_test":
@@ -729,3 +732,56 @@ func _set_sweep(context: EditorContext) -> void:
 			var r: Dictionary = await _measure(context, 1.5, func(_t: float) -> void: pass)
 			(part[1] as Callable).call(true)
 			print("SET   without %-24s GPU %.2f ms  (saves %.2f)  draw calls %d" % [part[0], r["gpu_ms"], base["gpu_ms"] - r["gpu_ms"], r["draw_calls"]])
+
+
+## Every tip on one cake: a line and a click of each on the top (two columns
+## of five, in shelf order), and classic borders around the side.
+func _build_tip_sampler(context: EditorContext) -> void:
+	var model: CakeModel = context.model
+	var tier: TierData = model.tiers[0]
+	context.commands.run(TierCommands.ResizeTier.new(model, tier.id, 1.6, 1.05))
+	tier = model.tiers[0]
+	context.commands.run(TierCommands.CoatTier.new(model, tier.id, Color(0.99, 0.95, 0.88), true, 0.9, false))
+	var colors: Array[Color] = [Color(0.97, 0.72, 0.78), Color(0.72, 0.86, 0.78), Color(0.99, 0.84, 0.62), Color(0.74, 0.8, 0.95), Color(0.85, 0.74, 0.93)]
+	var tips: Array[TipDefinition] = Content.tips()
+	for i in range(tips.size()):
+		var tip: TipDefinition = tips[i]
+		var column: float = -1.0 if i < 5 else 1.0
+		var row: float = float(i % 5)
+		var z: float = -0.92 + row * 0.46
+		var x0: float = column * 0.42
+		var x1: float = column * 1.0
+		var stroke := StrokeData.new()
+		stroke.id = model.new_id()
+		stroke.tier_id = tier.id
+		stroke.tip_id = tip.id
+		stroke.size_index = 1
+		stroke.radius = tip.preset_size(1)
+		stroke.color = colors[i % colors.size()]
+		stroke.rng_seed = stroke.id * 7919
+		var steps: int = 60
+		for k in range(steps + 1):
+			var t: float = float(k) / float(steps)
+			var p := Vector3(lerpf(x0, x1, t), tier.height, z + sin(t * TAU) * 0.06)
+			if Vector2(p.x, p.z).length() > tier.radius - 0.12:
+				break
+			stroke.add_sample(p, Vector3.UP, 1.0)
+		_add(context, stroke)
+		var click := StrokeData.new()
+		click.id = model.new_id()
+		click.tier_id = tier.id
+		click.tip_id = tip.id
+		click.size_index = 1
+		click.radius = tip.preset_size(1)
+		click.color = stroke.color
+		click.rng_seed = click.id * 7919
+		# Clicks sit in the middle, pointing out toward their line.
+		click.forward = Vector3(column, 0.0, 0.0)
+		click.add_sample(Vector3(column * 0.16, tier.height, z), Vector3.UP, 1.2)
+		_add(context, click)
+	# Around the side: a shell border at the bottom, ruffles, a row of drop
+	# flowers, and a closed-star rope at the top edge.
+	_add(context, DemoCake.side_ring(model, tier, 0.07, &"shell", 1, Color(1.0, 0.97, 0.92), 0.0, 0, 1.0))
+	_add(context, DemoCake.side_ring(model, tier, 0.42, &"ruffle", 1, Color(0.97, 0.72, 0.78), 0.0, 0, 1.0))
+	_add(context, DemoCake.side_ring(model, tier, 0.78, &"drop_flower", 1, Color(0.74, 0.8, 0.95), 0.0, 0, 1.0))
+	_add(context, DemoCake.top_ring(model, tier, tier.radius - 0.06, &"closed_star", 0, Color(1.0, 0.97, 0.92), 1.03))

@@ -229,6 +229,7 @@ func _finish() -> void:
 	stroke.radius = builder.radius
 	stroke.color = builder.color
 	stroke.rng_seed = builder.rng_seed
+	stroke.forward = builder.fallback_forward
 	builder.export_samples(stroke)
 	# The batch adopts the live stroke node itself, so nothing is rebuilt and
 	# nothing pops when the button is released.

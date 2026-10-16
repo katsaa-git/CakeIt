@@ -157,6 +157,12 @@ func _build_shelf() -> void:
 	var pipe := Shelves.PipeShelf.new()
 	pipe.setup(context)
 	_shelves[&"pipe"] = pipe
+	# Little 3D pictures of what each tip pipes, rendered once in the background.
+	var thumbnails := TipThumbnails.new()
+	thumbnails.name = "TipThumbnails"
+	add_child(thumbnails)
+	thumbnails.rendered.connect(pipe.set_thumbnail)
+	thumbnails.render_all.call_deferred(Content.tips())
 	var coat := Shelves.CoatShelf.new()
 	coat.setup(context)
 	_shelves[&"coat"] = coat

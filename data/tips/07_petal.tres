@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="TipDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/piping/tip_definition.gd" id="1_tip"]
+[ext_resource type="Script" path="res://scripts/piping/profiles/petal_profile.gd" id="2_profile"]
+
+[sub_resource type="Resource" id="Profile_petal"]
+script = ExtResource("2_profile")
+tilt_degrees = 55.0
+length = 1.9
+thick_end = 0.3
+thin_end = 0.035
+sides = 44
+
+[resource]
+script = ExtResource("1_tip")
+id = &"petal"
+display_name = "Petal"
+description = "A slanted teardrop opening: soft swags, bows and petals. A click makes one petal."
+sort_order = 7
+tags = PackedStringArray("floral", "petal", "swag")
+profile = SubResource("Profile_petal")
+lift = 0.5
+end_style = 0
+click_length = 1.8
+ring_spacing = 0.25
+speed_thinning = 0.1
+dwell_growth = 0.3
+size_names = PackedStringArray("Small", "Medium", "Large")
+size_presets = PackedFloat32Array(0.045, 0.065, 0.09)
+min_size = 0.025
+max_size = 0.14

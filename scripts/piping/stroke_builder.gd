@@ -19,6 +19,8 @@ extends RefCounted
 const SMOOTH_HALF: int = 5
 ## Rings per sealed chunk while piping.
 const CHUNK_RINGS: int = 20
+## Stamps are gathered into pieces of about this many vertices.
+const STAMP_CHUNK_VERTS: int = 6000
 const CAP_RINGS: int = 6
 const END_RINGS: int = 8
 ## Shorter strokes than this (in tip radii) become a single dot or kiss.
@@ -96,10 +98,19 @@ func _init(new_tip: TipDefinition, new_radius: float, new_color: Color, new_seed
 
 ## Builds the finished geometry for saved stroke data.
 static func build_stroke(stroke: StrokeData, stroke_tip: TipDefinition) -> StrokeBuilder:
-	var builder := StrokeBuilder.new(stroke_tip, stroke.radius, stroke.color, stroke.rng_seed)
+	var builder := for_stroke(stroke, stroke_tip)
 	for i in range(stroke.points.size()):
 		builder.add_sample(stroke.points[i], stroke.normals[i], stroke.pressures[i])
 	builder.finish()
+	return builder
+
+
+## An empty builder set up like the one that piped `stroke` (same size,
+## colour, seed and click direction), ready to be fed its samples.
+static func for_stroke(stroke: StrokeData, stroke_tip: TipDefinition) -> StrokeBuilder:
+	var builder := StrokeBuilder.new(stroke_tip, stroke.radius, stroke.color, stroke.rng_seed)
+	if stroke.forward != Vector3.ZERO:
+		builder.fallback_forward = stroke.forward
 	return builder
 
 
@@ -153,9 +164,7 @@ func set_open_pressure(pressure: float) -> void:
 func preview() -> MeshArrays:
 	if _raw_p.is_empty():
 		return MeshArrays.new()
-	if is_stamp():
-		return _pending_stamps()
-	var tail: MeshArrays = _build_tail()
+	var tail: MeshArrays = _pending_stamps() if is_stamp() else _build_tail()
 	if _open.is_empty():
 		return tail
 	var combined: MeshArrays = _open.duplicate_arrays()
@@ -172,6 +181,9 @@ func finish() -> void:
 		return
 	if is_stamp():
 		_commit_stamps(true)
+		if not _open.is_empty():
+			pieces.append(_open)
+			_open = MeshArrays.new()
 		return
 	var tail: MeshArrays = _build_tail()
 	var last: MeshArrays = _open
@@ -423,8 +435,12 @@ func _emit_end_cap(out: MeshArrays, args: Array) -> void:
 	TubeBuilder.fan(out, pole_index, last_ring, ring_size, false)
 
 
-## A single click: a dot, kiss or rosette rising straight off the surface.
+## A single click: a dot, kiss or rosette rising straight off the surface (or,
+## for tips with a click_length, a short leaf, petal or bar).
 func _emit_dollop(out: MeshArrays) -> void:
+	if tip.click_length > 0.0:
+		_emit_click_piece(out)
+		return
 	var origin: Vector3 = _raw_p[0]
 	var normal: Vector3 = _raw_n[0]
 	var pressure: float = 0.0
@@ -455,6 +471,40 @@ func _emit_dollop(out: MeshArrays) -> void:
 		scales.append(maxf(s * scale, scale * 0.02))
 		twists.append(v * tip.dollop_twist)
 	TubeBuilder.sweep(out, _shape, _colors, centers, ups, scales, twists, false, true, 0.0, 1.0 / radius)
+
+
+## A click with a leaf, petal or basketweave tip: a short piece laid along the
+## surface the way the bag is held. Leaves swell then pull to a point; petals
+## and bars have soft rounded ends.
+func _emit_click_piece(out: MeshArrays) -> void:
+	var origin: Vector3 = _raw_p[0]
+	var normal: Vector3 = _raw_n[0]
+	var pressure: float = 0.0
+	for w in _raw_w:
+		pressure = maxf(pressure, w)
+	var scale: float = radius * pressure
+	var forward: Vector3 = fallback_forward - normal * fallback_forward.dot(normal)
+	if forward.length_squared() < 1e-10:
+		forward = TubeBuilder.any_perpendicular(normal)
+	forward = forward.normalized()
+	var length: float = tip.click_length * scale
+	var rings: int = 14
+	var centers := PackedVector3Array()
+	var ups := PackedVector3Array()
+	var scales := PackedFloat32Array()
+	for i in range(rings + 1):
+		var t: float = float(i) / float(rings)
+		var s: float
+		if tip.end_style == TipDefinition.EndStyle.POINT:
+			# Fat at the base, then drawn out to a point.
+			s = pow(sin(minf(t / 0.3, 1.0) * PI * 0.5), 0.6) if t < 0.3 else pow(1.0 - (t - 0.3) / 0.7, 0.9)
+		else:
+			s = pow(sin(t * PI), 0.35)
+		s = maxf(s, 0.02)
+		centers.append(origin + forward * (t - 0.15) * length + normal * scale * tip.lift * s)
+		ups.append(normal)
+		scales.append(s * scale)
+	TubeBuilder.sweep(out, _shape, _colors, centers, ups, scales, PackedFloat32Array(), true, true, 0.0, 1.0 / radius)
 
 
 func _emit_coarse(args: Array) -> void:
@@ -559,11 +609,14 @@ func _commit_stamps(final: bool) -> void:
 			ready = s + spacing * 0.5 <= closed_length
 		if not ready:
 			break
-		var piece := MeshArrays.new()
-		_emit_stamp(piece, _stamps_done, s)
-		pieces.append(piece)
-		TubeBuilder.triangles_for_collision(piece, collision_faces)
+		var context: StampContext = _emit_stamp(_open, _stamps_done, s)
+		# Picking only needs a rough shape: a low dome per stamp, not every
+		# blade of grass.
+		tip.stamp.add_collision(collision_faces, context)
 		_stamps_done += 1
+		if _open.vertex_count() >= STAMP_CHUNK_VERTS:
+			pieces.append(_open)
+			_open = MeshArrays.new()
 
 
 ## Geometry for stamps that are visible but not yet committed.
@@ -580,7 +633,7 @@ func _pending_stamps() -> MeshArrays:
 	return out
 
 
-func _emit_stamp(out: MeshArrays, index: int, s: float) -> void:
+func _emit_stamp(out: MeshArrays, index: int, s: float) -> StampContext:
 	var spacing: float = _stamp_spacing()
 	var sample: Array = _raw_at(s)
 	var context := StampContext.new()
@@ -594,7 +647,9 @@ func _emit_stamp(out: MeshArrays, index: int, s: float) -> void:
 	context.rng.seed = hash(Vector2i(rng_seed, index))
 	var ahead: Vector3 = _raw_at(minf(s + spacing * 0.5, raw_length()))[0]
 	var behind: Vector3 = _raw_at(maxf(s - spacing * 0.5, 0.0))[0]
-	var forward: Vector3 = ahead - behind
+	# A click (no real drag) points the way the bag was held instead of
+	# following hand jitter.
+	var forward: Vector3 = ahead - behind if raw_length() >= spacing * 0.5 else Vector3.ZERO
 	forward -= context.normal * forward.dot(context.normal)
 	if forward.length_squared() < 1e-10:
 		forward = fallback_forward - context.normal * fallback_forward.dot(context.normal)
@@ -602,6 +657,7 @@ func _emit_stamp(out: MeshArrays, index: int, s: float) -> void:
 		forward = TubeBuilder.any_perpendicular(context.normal)
 	context.forward = forward.normalized()
 	tip.stamp.emit(out, context)
+	return context
 
 
 ## Position, normal and pressure at arc length `s` along the raw path.

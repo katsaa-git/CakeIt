@@ -119,7 +119,7 @@ func _build_step(budget_usec: int) -> void:
 		var stroke: StrokeData = _build_queue[0]
 		if _job_builder == null or _job_stroke != stroke:
 			_job_stroke = stroke
-			_job_builder = StrokeBuilder.new(Content.tip(stroke.tip_id), stroke.radius, stroke.color, stroke.rng_seed)
+			_job_builder = StrokeBuilder.for_stroke(stroke, Content.tip(stroke.tip_id))
 			_job_index = 0
 		var count: int = stroke.points.size()
 		while _job_index < count and Time.get_ticks_usec() - started < budget_usec:

@@ -106,7 +106,10 @@ func test_single_click_makes_a_dollop() -> void:
 		var top: float = -INF
 		for v in mesh.verts:
 			top = maxf(top, v.y)
-		check(top > 0.05, "%s: the dot rises off the surface (top %.3f)" % [tip.id, top])
+		# Dots and kisses stand up; click pieces (leaf, petal, basketweave bar)
+		# lie along the surface but must still be clearly there.
+		var wanted: float = 0.05 if tip.click_length == 0.0 else 0.02
+		check(top > wanted, "%s: the click rises off the surface (top %.3f)" % [tip.id, top])
 
 
 func test_holding_still_grows_the_blob() -> void:
@@ -137,3 +140,55 @@ func test_live_piping_is_fast() -> void:
 	print("    live piping cost per frame: avg %.2f ms, worst %.2f ms (%d verts, very long stroke)" % [average / 1000.0, worst / 1000.0, builder.vertex_total()])
 	# Cost must not grow with stroke length: the last frames are as cheap as the first.
 	check(average < 4000.0, "average per-frame cost under 4 ms (%.2f ms)" % (average / 1000.0))
+
+
+## A single click with a stamp or leaf tip points the way the bag was held,
+## and that direction survives saving: the rebuilt stroke is identical.
+func test_click_direction_is_kept() -> void:
+	for id: StringName in [&"shell", &"leaf", &"petal", &"basketweave"]:
+		var tip: TipDefinition = Content.tip(id)
+		var stroke := StrokeData.new()
+		stroke.tip_id = id
+		stroke.radius = 0.07
+		stroke.rng_seed = 9
+		stroke.forward = Vector3(0.6, 0.0, 0.8)
+		stroke.add_sample(Vector3.ZERO, Vector3.UP, 1.2)
+		var built: StrokeBuilder = StrokeBuilder.build_stroke(stroke, tip)
+		var box: AABB = concat(built.pieces).bounds()
+		var reach: Vector3 = box.get_center()
+		check(Vector2(reach.x, reach.z).dot(Vector2(0.6, 0.8)) > 0.0, "%s: a click points the stored way" % id)
+		var loaded: StrokeData = StrokeData.from_dict(JSON.parse_string(JSON.stringify(stroke.to_dict())))
+		var rebuilt: StrokeBuilder = StrokeBuilder.build_stroke(loaded, tip)
+		check(concat(rebuilt.pieces).verts == concat(built.pieces).verts, "%s: same shape after saving and loading" % id)
+
+
+## Stamps get a light collision shell (a few triangles each), not every
+## blade of grass.
+func test_stamp_collision_is_light() -> void:
+	for id: StringName in [&"grass", &"shell", &"drop_flower"]:
+		var tip: TipDefinition = Content.tip(id)
+		var stroke: StrokeData = make_wavy_stroke(id, 120, 3.0)
+		var builder: StrokeBuilder = StrokeBuilder.build_stroke(stroke, tip)
+		var triangles: int = builder.collision_faces.size() / 3
+		var visible_triangles: int = concat(builder.pieces).indices.size() / 3
+		check(triangles > 0 and triangles * 10 < visible_triangles, "%s: %d collision triangles for %d visible" % [id, triangles, visible_triangles])
+
+
+## Every tip stays cheap to pipe live, frame after frame, even on a long drag.
+func test_every_tip_is_fast_to_pipe() -> void:
+	for tip in Content.tips():
+		var stroke: StrokeData = make_wavy_stroke(tip.id, 600, 12.0)
+		var builder := StrokeBuilder.new(tip, stroke.radius, stroke.color, 5)
+		var total: int = 0
+		var worst: int = 0
+		for i in range(stroke.points.size()):
+			var t0: int = Time.get_ticks_usec()
+			builder.add_sample(stroke.points[i], stroke.normals[i], stroke.pressures[i])
+			builder.preview()
+			var dt: int = Time.get_ticks_usec() - t0
+			total += dt
+			if i > 10:
+				worst = maxi(worst, dt)
+		var average: float = float(total) / float(stroke.points.size()) / 1000.0
+		print("    %-12s avg %.2f ms, worst %.2f ms, %d verts" % [tip.id, average, worst / 1000.0, builder.vertex_total()])
+		check(average < 3.0, "%s: live piping averages under 3 ms per frame (%.2f ms)" % [tip.id, average])

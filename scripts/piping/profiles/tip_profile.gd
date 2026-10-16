@@ -26,3 +26,19 @@ func make_wave(_loop: PackedVector2Array) -> PackedVector2Array:
 func build() -> ProfileShape:
 	var loop: PackedVector2Array = make_loop(sides)
 	return ProfileShape.from_points(loop, make_wave(loop))
+
+
+## Returns the loop counter-clockwise (reversed if it was drawn the other way),
+## which is what ProfileShape expects for outward normals.
+static func counter_clockwise(loop: PackedVector2Array) -> PackedVector2Array:
+	var area: float = 0.0
+	for j in range(loop.size()):
+		var a: Vector2 = loop[j]
+		var b: Vector2 = loop[(j + 1) % loop.size()]
+		area += a.x * b.y - b.x * a.y
+	if area >= 0.0:
+		return loop
+	var reversed := PackedVector2Array()
+	for j in range(loop.size() - 1, -1, -1):
+		reversed.append(loop[j])
+	return reversed

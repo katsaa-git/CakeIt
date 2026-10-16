@@ -1,0 +1,38 @@
+[gd_resource type="Resource" script_class="TipDefinition" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/piping/tip_definition.gd" id="1_tip"]
+[ext_resource type="Script" path="res://scripts/piping/profiles/round_profile.gd" id="2_profile"]
+[ext_resource type="Script" path="res://scripts/piping/stamps/grass_stamp.gd" id="3_stamp"]
+
+[sub_resource type="Resource" id="Profile_grass"]
+script = ExtResource("2_profile")
+squash = 1.0
+sides = 14
+
+[sub_resource type="Resource" id="Stamp_grass"]
+script = ExtResource("3_stamp")
+strands = 14
+length = 2.1
+thickness = 0.2
+splay = 0.35
+droop = 0.6
+lean = 0.3
+
+[resource]
+script = ExtResource("1_tip")
+id = &"grass"
+display_name = "Grass"
+description = "Squeeze and pull for tufts of grass or fur. Drag for a whole lawn."
+sort_order = 10
+tags = PackedStringArray("grass", "fur", "texture")
+profile = SubResource("Profile_grass")
+behavior = 1
+stamp = SubResource("Stamp_grass")
+stamp_spacing = 0.9
+ring_spacing = 0.3
+speed_thinning = 0.0
+dwell_growth = 0.5
+size_names = PackedStringArray("Small", "Medium", "Large")
+size_presets = PackedFloat32Array(0.045, 0.065, 0.09)
+min_size = 0.025
+max_size = 0.14

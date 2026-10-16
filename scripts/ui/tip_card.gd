@@ -61,10 +61,13 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
-	var picture_size: float = 56.0 * (1.0 + _bounce * 0.12 + _hover * 0.05)
-	var center := Vector2(size.x * 0.5, 36.0 - _hover * 2.0)
+	var picture_size: float = 64.0 * (1.0 + _bounce * 0.12 + _hover * 0.05)
+	var center := Vector2(size.x * 0.5, 38.0 - _hover * 2.0)
 	if thumbnail != null:
-		draw_texture_rect(thumbnail, Rect2(center - Vector2(picture_size, picture_size) * 0.5, Vector2(picture_size, picture_size)), false)
+		# A soft round backdrop so pale frosting stands out from the card.
+		draw_circle(center + Vector2(0.0, 2.0), picture_size * 0.44, Color(0.55, 0.38, 0.3, 0.1 + 0.05 * _hover))
+		# The picture is white frosting; tint it with the current colour.
+		draw_texture_rect(thumbnail, Rect2(center - Vector2(picture_size, picture_size) * 0.5, Vector2(picture_size, picture_size)), false, color)
 	else:
 		_draw_profile(center, picture_size * 0.42)
 	var font: Font = UiTheme.font(true)

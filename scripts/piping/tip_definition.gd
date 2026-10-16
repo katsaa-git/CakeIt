@@ -46,6 +46,11 @@ enum EndStyle {
 @export_range(0.3, 3.0) var dollop_height: float = 1.0
 ## How much a single click twists as it rises (radians), like turning the bag.
 @export_range(0.0, 6.0) var dollop_twist: float = 0.0
+## A single click: 0 makes a dot or kiss rising off the surface; above 0 makes
+## a short piece this long (in tip radii) pointing the way the bag is held, so
+## a click with a leaf tip makes a leaf, with a petal tip a petal, and with
+## the basketweave tip one bar of the weave.
+@export_range(0.0, 6.0) var click_length: float = 0.0
 
 @export_group("Feel")
 ## Distance between mesh rings, in tip radii. Smaller is smoother but heavier.

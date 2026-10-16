@@ -18,6 +18,9 @@ var rng_seed: int = 0
 var points := PackedVector3Array()
 var normals := PackedVector3Array()
 var pressures := PackedFloat32Array()
+## For a single click (one sample), the direction the shell, leaf or petal
+## points along the surface (tier-local). Zero when the path itself says.
+var forward := Vector3.ZERO
 
 
 func sample_count() -> int:
@@ -42,6 +45,7 @@ func duplicate_data() -> StrokeData:
 	copy.points = points.duplicate()
 	copy.normals = normals.duplicate()
 	copy.pressures = pressures.duplicate()
+	copy.forward = forward
 	return copy
 
 
@@ -54,7 +58,7 @@ func length() -> float:
 
 
 func to_dict() -> Dictionary:
-	return {
+	var data := {
 		"id": id,
 		"tier": tier_id,
 		"tip": String(tip_id),
@@ -66,6 +70,9 @@ func to_dict() -> Dictionary:
 		"normals": SaveMath.pack_vec3(normals, 0.001),
 		"pressures": SaveMath.pack_floats(pressures, 0.001),
 	}
+	if forward != Vector3.ZERO:
+		data["forward"] = SaveMath.pack_vec3(PackedVector3Array([forward]), 0.001)
+	return data
 
 
 static func from_dict(data: Dictionary) -> StrokeData:
@@ -80,6 +87,9 @@ static func from_dict(data: Dictionary) -> StrokeData:
 	stroke.points = SaveMath.unpack_vec3(data.get("points", []))
 	stroke.normals = SaveMath.unpack_vec3(data.get("normals", []))
 	stroke.pressures = SaveMath.unpack_floats(data.get("pressures", []))
+	var forward: PackedVector3Array = SaveMath.unpack_vec3(data.get("forward", []))
+	if forward.size() == 1:
+		stroke.forward = forward[0]
 	# Repair mismatched arrays from a hand-edited or damaged file.
 	var count: int = mini(stroke.points.size(), stroke.normals.size())
 	stroke.points.resize(count)

@@ -6,30 +6,13 @@ to extend it, and what still needs work. Newest milestone first in the log.
 ## Handoff: where things stand
 
 **Finished and committed:** milestones A (version check, piping core,
-performance), B (turntable, tiers, coat, spatula, interface layout) and C
-(lighting, set and look).
+performance), B (turntable, tiers, coat, spatula, interface layout), C
+(lighting, set and look) and D (the ten piping tips).
 
-**Next: milestone D (the 10 tips).** The plan for D to H is below.
+**Next: milestone E (decorations).** The plan for E to H is below.
 
 **Remaining milestones** (from the original brief, in order):
 
-- **D. The 10 tips** as data in `data/tips/`. Round and open star already
-  exist; the rest:
-  - **Closed star:** `StarProfile` with more points, deeper grooves and higher
-    `ridge_fullness`.
-  - **Leaf:** new `LeafProfile`, `end_style` POINT.
-  - **Petal:** new `PetalProfile` (tilted teardrop).
-  - **Ruffle:** petal plus `wave_amplitude`. The profile has to supply per-point
-    `wave` offsets.
-  - **Ribbon / basketweave:** new `RibbonProfile` (flat, with a ridged top).
-  - **Grass:** `StampShape` subclass (a tuft of tapered strands).
-  - **Drop flower:** `StampShape` (lobed star profile swept up the surface
-    normal with a twist).
-  - **Shell:** `StampShape` (star profile, teardrop scale, follows the drag
-    direction).
-
-  The stamp plumbing already exists in `StrokeBuilder` (`_commit_stamps`,
-  `_emit_stamp`, `StampContext`). Also add 3D thumbnails for the tip cards.
 - **E. Decorations** as data in `data/decorations/`. `DecorationData` and
   `AddDecorationsCommand` already exist; `Content.decorations()` expects
   resources that have `category`, `sort_order`, `id` and `validate()`.
@@ -127,8 +110,9 @@ Everything is created from code; there are no hand-made models.
 
 ## The tools
 
-- **Piping bag (B)**: pipe lines, dots and kisses. Tips, sizes and fine size
-  are on the bottom shelf; colours on the right.
+- **Piping bag (B)**: pipe lines, dots, kisses, shells, flowers, leaves,
+  ruffles, basketweave and grass with ten tips (see below). Tips, sizes and
+  fine size are on the bottom shelf; colours on the right.
 - **Frosting coat (C)**: pick a colour (and "Smooth buttercream" or
   "Semi-naked"), then click a tier. The new coat spreads from the top centre
   down the sides.
@@ -139,16 +123,55 @@ Everything is created from code; there are no hand-made models.
   Medium, Large) and height (Short, Classic, Tall), add a tier on top or
   remove one. Piping and decorations on a resized tier move with its surface.
 
+## The piping tips
+
+Ten tips, all data in `data/tips/` (shelf order):
+
+| Tip | How it works | Drag | Click |
+| --- | --- | --- | --- |
+| Round | `RoundProfile` | lines, writing | dot / pearl (hold to grow) |
+| Open Star | `StarProfile`, 8 soft ridges | ridged lines, borders | star kiss with a twist |
+| Closed Star | `StarProfile`, 10 deep, tight grooves | bold borders, ropes | twisted star |
+| Shell | `ShellStamp` on a star profile | a row of overlapping shells | one shell |
+| Drop Flower | `DropFlowerStamp` on a 5-lobed star | a row of flowers | one flower with a sunny middle |
+| Leaf | `LeafProfile` (V-notch vein, pointed sides), `end_style` POINT | a leaf drawn out to a point | a small leaf |
+| Petal | `PetalProfile` (slanted teardrop) | swags, ribbons | one petal |
+| Ruffle | `PetalProfile` with `frill`, plus `wave_amplitude` | a frilly border | one petal |
+| Basketweave | `RibbonProfile` (flat band, ribbed top) | ribbons | one bar of the weave |
+| Grass | `GrassStamp` (tufts of tapered strands) | a lawn | one tuft |
+
+- **Clicks** (`click_length` above 0): a short piece laid along the surface
+  the way the bag is held (the camera's right). The direction is stored in
+  `StrokeData.forward`, so rebuilding from data (resizing a tier, loading)
+  gives exactly the same piece.
+- **Stamps** (`behavior` STAMP): `StrokeBuilder` places one every
+  `stamp_spacing` tip radii along the drag; a `StampShape` subclass builds
+  each one. Stamps are gathered into pieces of ~6000 vertices, and each gets
+  a 24-triangle dome for picking (`StampShape.add_collision` /
+  `collision_extent`) instead of its full geometry.
+- **Thumbnails**: `TipThumbnails` pipes a small white sample of each tip in a
+  hidden mini scene once at start-up; the tip cards tint it with the current
+  colour. Its multisampling matches the main view (2x): a different setting
+  made the GPU build a new pipeline and caused a 60 ms hitch.
+- Sampler of every tip: `--scenario=tips --shots=... --angles=overhead,close`.
+
 ## Adding a new piping tip
 
 1. Copy a file in `data/tips/` (for example `02_open_star.tres`) and rename it.
 2. Change `id`, `display_name`, `description` and `sort_order`.
 3. Adjust the profile numbers (points, depth, ridge fullness...) and the feel
-   settings (end style, lift, speed thinning, dwell growth, sizes).
-4. Run the tests. No code changes needed.
+   settings (end style, lift, click length, speed thinning, dwell growth,
+   sizes).
+4. Run the tests (they check every tip: valid data, sound geometry, live
+   piping identical to a rebuild, fast enough). No code changes needed.
 
 A brand-new cross-section shape needs a small `TipProfile` subclass in
-`scripts/piping/profiles/` (one function that returns the outline points).
+`scripts/piping/profiles/` (one function that returns the outline points;
+`counter_clockwise()` fixes the winding). A new repeated shape needs a
+`StampShape` subclass in `scripts/piping/stamps/` (`emit` adds one stamp's
+geometry). **After adding any new script with a `class_name`, run the
+editor import once** (`--headless --path . --import`), or the game fails to
+start with "Identifier not declared".
 
 ## Adding tier sizes or colours
 
@@ -169,6 +192,7 @@ A brand-new cross-section shape needs a small `TipProfile` subclass in
 - What each part of the bakery set costs: `... --path . -- --scenario=set_sweep`
 - Shadow layout comparison: `... --path . -- --scenario=shadow_sweep`
 - Tier demo: `... --path . -- --scenario=tiers --shots=C:/some/folder`
+- Every tip on one cake: `... --path . -- --scenario=tips --shots=C:/some/folder --angles=overhead,close`
 - Extra flags: `--ui=true` keeps the interface in shots, `--tools=true` shows
   the piping bag, `--tool=tiers` picks a tool first.
 - Benchmarks at a tiny window (`--resolution 384x216` before `--`) show the
@@ -263,6 +287,15 @@ a long stroke cost ~39 ms. What changed then:
 
 ## Milestone log
 
+- **D. The ten tips.** Closed star, shell, drop flower, leaf, petal, ruffle,
+  basketweave and grass join round and open star, all as data. New
+  `LeafProfile`, `PetalProfile` (with a frill for ruffles), `RibbonProfile`,
+  and `ShellStamp`, `DropFlowerStamp`, `GrassStamp`. Clicks with leaf, petal
+  and basketweave make a small leaf, petal or bar pointing the way the bag
+  is held; that direction is now saved with the stroke, so rebuilds match.
+  Stamps are gathered into large pieces with light dome collision. 3D tip
+  thumbnails tinted with the current colour. Content tests, a per-tip speed
+  test and a tip sampler scenario.
 - **C. Lighting and set.** Seaside bakery set built in code, new light rig,
   reflection probe, haze, dust motes, vignette, stronger depth of field,
   camera orbit limits. Performance pass (see Performance). Art pass: the
