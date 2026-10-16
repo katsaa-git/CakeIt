@@ -14,6 +14,7 @@ var icon_size: float = 34.0
 var _hover: float = 0.0
 var _bounce: float = 0.0
 var _bounce_velocity: float = 0.0
+var _hover_goal: float = 0.0
 
 
 static func make(id: StringName, hint: String, key: String = "", caption: String = "", size: float = 64.0) -> IconButton:
@@ -31,15 +32,20 @@ func _ready() -> void:
 	focus_mode = Control.FOCUS_NONE
 	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	pressed.connect(_on_pressed)
-	mouse_entered.connect(func() -> void: _hover_goal = 1.0)
-	mouse_exited.connect(func() -> void: _hover_goal = 0.0)
+	mouse_entered.connect(func() -> void: _wake(1.0))
+	mouse_exited.connect(func() -> void: _wake(0.0))
+	# Idle buttons do no work at all; hovering or pressing wakes them up.
+	set_process(false)
 
 
-var _hover_goal: float = 0.0
+func _wake(hover_goal: float) -> void:
+	_hover_goal = hover_goal
+	set_process(true)
 
 
 func _on_pressed() -> void:
 	_bounce_velocity = -9.0
+	set_process(true)
 	tapped.emit()
 
 
@@ -54,6 +60,8 @@ func _process(delta: float) -> void:
 		changed = true
 	if changed:
 		queue_redraw()
+	else:
+		set_process(false)
 
 
 func _draw() -> void:

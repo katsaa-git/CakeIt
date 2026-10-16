@@ -121,7 +121,9 @@ void fragment() {
 	vec3 r2 = cross(NORMAL, dpdx);
 	float det = dot(dpdx, r1);
 	vec3 grad = sign(det) * (dhx * r1 + dhy * r2);
-	vec3 bumped = abs(det) * NORMAL - grad * 0.012;
+	// No bump right at the silhouette, where derivatives would make it sparkle.
+	float facing = smoothstep(0.08, 0.45, abs(dot(NORMAL, VIEW)));
+	vec3 bumped = abs(det) * NORMAL - grad * 0.012 * facing;
 	float bumped_length = length(bumped);
 	// Guard against zero-length normals (they turn into NaN and black squares).
 	if (bumped_length > 1e-20 && abs(det) > 1e-24) {
@@ -131,8 +133,8 @@ void fragment() {
 	ALBEDO = albedo;
 	ROUGHNESS = mix(naked_rough, 0.46 - 0.08 * smooth_now, coated_now);
 	SPECULAR = 0.42;
-	SSS_STRENGTH = mix(0.12, 0.35, max(coated_now, frost_mask));
-	RIM = 0.18;
+	SSS_STRENGTH = mix(0.08, 0.18, max(coated_now, frost_mask));
+	RIM = 0.05;
 	RIM_TINT = 0.7;
 	EMISSION = albedo * highlight * 0.32;
 }

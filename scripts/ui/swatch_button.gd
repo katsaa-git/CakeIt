@@ -30,9 +30,18 @@ func _ready() -> void:
 	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	for state in ["normal", "hover", "pressed", "hover_pressed", "focus"]:
 		add_theme_stylebox_override(state, StyleBoxEmpty.new())
-	mouse_entered.connect(func() -> void: _hover_goal = 1.0)
-	mouse_exited.connect(func() -> void: _hover_goal = 0.0)
-	pressed.connect(func() -> void: _pop = 1.0)
+	mouse_entered.connect(func() -> void: _wake(1.0))
+	mouse_exited.connect(func() -> void: _wake(0.0))
+	pressed.connect(func() -> void:
+		_pop = 1.0
+		set_process(true))
+	# Idle swatches do no work; hovering or pressing wakes them up.
+	set_process(false)
+
+
+func _wake(hover_goal: float) -> void:
+	_hover_goal = hover_goal
+	set_process(true)
 
 
 func _process(delta: float) -> void:
@@ -45,6 +54,8 @@ func _process(delta: float) -> void:
 		redraw = true
 	if redraw:
 		queue_redraw()
+	else:
+		set_process(false)
 
 
 func _draw() -> void:

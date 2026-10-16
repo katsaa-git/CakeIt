@@ -7,10 +7,10 @@ render_mode diffuse_burley, specular_schlick_ggx;
 
 uniform float roughness : hint_range(0.0, 1.0) = 0.44;
 uniform float specular_amount : hint_range(0.0, 1.0) = 0.42;
-uniform float sss : hint_range(0.0, 1.0) = 0.35;
-uniform float sheen : hint_range(0.0, 1.0) = 0.22;
+uniform float sss : hint_range(0.0, 1.0) = 0.18;
+uniform float sheen : hint_range(0.0, 1.0) = 0.06;
 // Tiny surface ripples.
-uniform float bump_strength : hint_range(0.0, 4.0) = 1.0;
+uniform float bump_strength : hint_range(0.0, 4.0) = 0.75;
 uniform float bump_scale = 2.4;
 uniform sampler3D noise3d : repeat_enable, filter_linear_mipmap;
 // Multiplies the final colour.
@@ -39,7 +39,7 @@ void fragment() {
 	vec3 base = srgb_to_linear(COLOR.rgb) * tint.rgb;
 	float h = texture(noise3d, obj_pos * bump_scale).r;
 	float fine = texture(noise3d, obj_pos * bump_scale * 4.1 + vec3(0.37)).r;
-	float height = h * 0.7 + fine * 0.3;
+	float height = h * 0.8 + fine * 0.2;
 
 	// Bump from screen-space derivatives (no tangents needed).
 	vec3 dpdx = dFdx(VERTEX);
@@ -50,7 +50,10 @@ void fragment() {
 	vec3 r2 = cross(NORMAL, dpdx);
 	float det = dot(dpdx, r1);
 	vec3 grad = sign(det) * (dhx * r1 + dhy * r2);
-	vec3 bumped = abs(det) * NORMAL - grad * bump_strength * 0.004;
+	// Fade the ripples out toward the silhouette: there the screen-space
+	// derivatives get huge and would make the edges sparkle.
+	float facing = smoothstep(0.08, 0.45, abs(dot(NORMAL, VIEW)));
+	vec3 bumped = abs(det) * NORMAL - grad * bump_strength * 0.004 * facing;
 	float bumped_length = length(bumped);
 	// Guard against zero-length normals (they turn into NaN and black squares).
 	if (bumped_length > 1e-20 && abs(det) > 1e-24) {

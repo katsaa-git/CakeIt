@@ -3,57 +3,15 @@
 Running notes on the cake decorating core: what exists, how to use it, how
 to extend it, and what still needs work. Newest milestone first in the log.
 
-## Handoff: where things stand (end of session 1)
+## Handoff: where things stand
 
-**Finished and committed:** milestone A (version check, piping core,
-performance) and milestone B (turntable, tiers, coat, spatula, interface
-layout).
+**Finished and committed:** milestones A (version check, piping core,
+performance), B (turntable, tiers, coat, spatula, interface layout) and C
+(lighting, set and look).
 
-**In progress: milestone C (lighting, environment, look).** Stable and
-working, but not finished. Done so far:
+**Next: milestone D (the 10 tips).** The plan for D to H is below.
 
-- A seaside bakery corner built in code (`scripts/env/bakery_set.gd`,
-  `scripts/env/props.gd`): marble counter, tiled backsplash, white window with
-  a sea view and lighthouse, sheer swaying curtains, shelf with jars, linen
-  cloth under the stand, tulips in a jug, sprinkle jar, mixing bowl, plates,
-  herb pot.
-- New lighting (`scripts/env/studio_lighting.gd`): warm window key light from
-  behind-left, soft front fill from the left, warm window glow, reflection
-  probe, AgX tone mapping, SSAO, mild bloom, light haze, dust motes, warm
-  vignette. Stronger depth of field (`scripts/core/orbit_camera.gd`).
-- Camera orbit limited to about ±65° around the front (±86° in photo mode,
-  once photo mode exists). The turntable turns the cake instead.
-- New shaders in `art/shaders/`: marble, tiles, window_view, linen, curtain,
-  vignette.
-
-**Exact next steps to finish milestone C:**
-
-1. **Performance of the new set.** The laptop was throttling during the last
-   measurements, so only side-by-side numbers are trustworthy. Against the
-   milestone B build under the same conditions, the heavy test cake went from
-   65 to 47 fps (`--scenario=bench`). GPU time is only ~7 ms, so most of the
-   frame is CPU.
-   - The new "scripts" timer in the benchmark printed implausible values
-     (60–90 ms). First check whether `Performance.TIME_PROCESS` already
-     returns milliseconds, then find what costs CPU.
-   - Suspects: ~300 draw calls (many small prop meshes and interface
-     controls), per-frame `_process` work in interface widgets
-     (`TurntableDial` redraws every frame), the transparent curtains, the
-     particles.
-   - Options: merge static prop meshes into a few meshes, only redraw idle
-     widgets when something changes.
-   - Target: a steady 60+ fps on the heavy cake.
-2. **Art pass on the remaining weak spots.** Check them with
-   `--scenario=showcase --angles=front,close,wide`.
-   - The cake still reads slightly flat and milky.
-   - The sky is still a little too cyan.
-   - The herb pot looks like a cactus.
-   - The curtains are stiff.
-   - The white piping has a faint bright halo at its edges.
-   - The metal nozzle should now reflect the room; check that it does.
-3. Run the checks (below) and commit milestone C.
-
-**Remaining milestones after C** (from the original brief, in order):
+**Remaining milestones** (from the original brief, in order):
 
 - **D. The 10 tips** as data in `data/tips/`. Round and open star already
   exist; the rest:
@@ -90,6 +48,8 @@ working, but not finished. Done so far:
   - Credit any CC0 clips in `docs/CREDITS.md`.
 - **G. UI polish and photo mode:**
   - Bigger icons, tip and decoration thumbnails, better tooltips.
+  - A graphics quality option (SSAO, depth of field, glow, render scale)
+    for weaker or throttling laptops (see Performance).
   - Photo mode: UI hidden, freer camera, click to focus, saves a PNG to
     `user://screenshots`.
 - **H. Save/load and tests:**
@@ -206,28 +166,76 @@ A brand-new cross-section shape needs a small `TipProfile` subclass in
   `... --path . -- --scenario=showcase --shots=C:/some/folder --angles=front,close,high`
 - Benchmark: `... --path . -- --scenario=bench`
 - Render settings cost sweep: `... --path . -- --scenario=sweep`
+- What each part of the bakery set costs: `... --path . -- --scenario=set_sweep`
 - Shadow layout comparison: `... --path . -- --scenario=shadow_sweep`
 - Tier demo: `... --path . -- --scenario=tiers --shots=C:/some/folder`
 - Extra flags: `--ui=true` keeps the interface in shots, `--tools=true` shows
   the piping bag, `--tool=tiers` picks a tool first.
+- Benchmarks at a tiny window (`--resolution 384x216` before `--`) show the
+  CPU cost on its own.
 - Both executables live in `C:\Users\celia\CakeGame\`. Use the `_console`
   one from a terminal so you see the output.
 
-## Performance (measured at the end of milestone A)
+## Performance
 
 Measured on the target laptop (RTX 3050 6 GB Laptop GPU, 1600x900 window,
-vsync off; the display caps at 120 fps).
+vsync off, on mains power).
+
+**Laptop speed changes a lot.** Throttled (hot, or on battery) the same build
+measured 47 fps where it now measures 149 fps. Only compare numbers taken
+side by side, and alternate the two builds (B, C, B, C) when you do.
+
+### End of milestone C (full bakery set)
+
+| Case | Result |
+| --- | --- |
+| Empty cake | ~176 fps, GPU 5.1 ms |
+| Overloaded 3-tier cake: 375 strokes, 373k frosting vertices, spinning | **149 fps avg, 129 fps 1% low**, no hitches, GPU 6.1 ms, CPU render 0.7 ms, scripts 0.3 ms |
+| Piping a very long line live on that cake | stroke cost 1.5 ms avg per frame, scene 153 fps |
+| Releasing that long line | 1.7 ms |
+| Undo / redo of it | 0.2 ms / 1.7 ms |
+
+At a tiny resolution (so the GPU barely works) the whole frame costs only
+~2 ms of CPU, so the game is GPU-bound. What the set costs, measured with
+`--scenario=set_sweep` (each part switched off on its own):
+
+- Shading the room itself (walls, counter, backsplash) instead of a flat
+  background: ~1 ms. That is the price of having a room.
+- SSAO ~0.8–1.0 ms, depth of field ~0.6 ms, glow ~0.3–0.4 ms, the reflection
+  probe ~0.2 ms, the window glow light ~0.2 ms, SMAA ~0.2 ms.
+- Fog, colour adjustment, dust motes, vignette, curtains, window view: ~0.
+
+What changed in C's performance pass:
+
+- The "scripts" number in the benchmark was misleading: Godot's
+  `TIME_PROCESS` monitor is the worst frame of the last second, not a
+  per-frame value. The benchmark now times every node's `_process` itself
+  (two probe nodes, first and last), counts hitches, skips its own warm-up
+  frame, and no longer prints inside timed sections (console printing on
+  Windows took ~28 ms and showed up as a fake "release" cost).
+- The herb pot's 12 leaves were default spheres: 50,000 triangles. Now a
+  low-poly basil (~700). The whole set went from 72k to 23k triangles.
+- Static props are merged per group (window frame, shelf, each prop) into one
+  mesh per material (`StaticBatcher`): about 45 fewer draw calls. Merging the
+  whole set into one mesh was worse (nothing could be culled any more).
+- The reflection probe only influences the space around the cake (it still
+  captures the whole room).
+- Idle interface widgets (buttons, swatches, tip cards, turntable ring) no
+  longer redraw or tick every frame.
+
+For weaker or throttling laptops the next step is a graphics quality option
+(SSAO, depth of field, glow, render scale), planned with the settings in G.
+
+### End of milestone A (before the set; grey background)
 
 | Case | Result |
 | --- | --- |
 | Empty cake | ~160 fps, GPU 3.9 ms |
-| Overloaded 3-tier cake: 375 strokes, 377k frosting vertices, spinning | **112 fps avg, 94 fps 1% low**, GPU 7.0 ms, 74 draw calls |
+| Overloaded 3-tier cake, spinning | 112 fps avg, 94 fps 1% low, GPU 7.0 ms, 74 draw calls |
 | Piping a very long line live on that cake | stroke cost 2.0 ms avg / 4.7 ms worst per frame, scene 104 fps |
-| Releasing that long line | 4.4 ms (handover, no rebuild) |
-| Undo / redo of it | 0.3 ms / 3.0 ms |
 
-Before this milestone the same cake ran at 30 fps (GPU 27 ms), and releasing
-a long stroke cost ~39 ms. What changed:
+Before milestone A the same cake ran at 30 fps (GPU 27 ms), and releasing
+a long stroke cost ~39 ms. What changed then:
 
 - Rings are only placed where the line bends or changes thickness (2.5x fewer
   vertices, no visible difference).
@@ -242,8 +250,6 @@ a long stroke cost ~39 ms. What changed:
 - The interface layout is in place but still needs its polish pass
   (bigger icons, thumbnails for tips, nicer tooltips).
 - The decorations button is greyed out until the decorations milestone.
-- Milestone C is unfinished: see the handoff section (performance of the new
-  set, remaining art weak spots).
 - The end-to-end input test failed once, on its first run right after a fresh
   import (shaders were still compiling, so frames stalled). It passed on the
   next three runs. If it fails, run it again before investigating.
@@ -257,9 +263,18 @@ a long stroke cost ~39 ms. What changed:
 
 ## Milestone log
 
-- **C. Lighting and set (in progress).** Seaside bakery set, new light rig,
+- **C. Lighting and set.** Seaside bakery set built in code, new light rig,
   reflection probe, haze, dust motes, vignette, stronger depth of field,
-  camera orbit limits. Still needs a performance pass and a final art pass.
+  camera orbit limits. Performance pass (see Performance). Art pass: the
+  cake now shades across its face with a soft sheen band (fill light swung
+  to the side with more specular, less flat ambient, AgX contrast up, less
+  subsurface and rim), no more bright fringe on white piping (higher bloom
+  threshold, frosting ripples fade out at the silhouette, SMAA on top of 2x
+  MSAA), a soft periwinkle sky and calm blue sea with big clouds and a hazy
+  horizon, sheer café curtains tied back with a ribbon, a low-poly basil
+  plant instead of the "cactus", marble with flowing veins instead of
+  contour rings, a filled piping bag, and a wall behind the camera so the
+  steel nozzle and glossy surfaces reflect a room instead of black.
 - **B. Turntable and tiers.** Tier tool with data-driven width/height presets,
   add/remove/resize with undo (piping follows the surface), frosting coat
   tool with a spreading-coat animation, semi-naked sponge look, smoothing

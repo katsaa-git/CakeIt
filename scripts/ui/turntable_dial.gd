@@ -29,8 +29,19 @@ func setup(new_turntable: Turntable, new_camera: OrbitCamera) -> void:
 	tooltip_text = "Turntable: drag the ring to spin the cake, click the middle for auto-spin  (A / D, R)"
 
 
+var _drawn_state := Vector4(INF, INF, INF, INF)
+
+
+## Redraws only when something it shows has changed (the stand turned, the
+## camera moved round, hover or auto-spin changed), not every frame.
 func _process(_delta: float) -> void:
-	queue_redraw()
+	if turntable == null:
+		return
+	var flags: float = (1.0 if _hover else 0.0) + (2.0 if _center_hover else 0.0) + (4.0 if _dragging else 0.0) + (8.0 if turntable.auto_spin else 0.0)
+	var state := Vector4(snappedf(wrapf(turntable.angle, 0.0, TAU), 0.002), snappedf(_camera_angle(), 0.002), flags, 0.0)
+	if state != _drawn_state:
+		_drawn_state = state
+		queue_redraw()
 
 
 func _outer_radius() -> float:

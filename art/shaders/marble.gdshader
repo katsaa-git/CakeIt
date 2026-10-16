@@ -26,15 +26,22 @@ void vertex() {
 }
 
 void fragment() {
+	// Classic marble: stripes running one way, bent by layered noise, so veins
+	// wander and branch but never close into rings. They fade in and out in
+	// patches so the slab is mostly calm.
 	vec2 uv = world_pos.xz * scale;
-	vec2 warp = vec2(texture(noise_tex, uv * 1.7 + 0.21).r, texture(noise_tex, uv * 1.7 + 0.67).r) - 0.5;
-	uv += warp * 0.08;
-	float main_vein = ridge(uv * vec2(1.0, 0.55));
-	float fine_vein = ridge(uv * 2.6 + 0.37);
-	float vein = pow(main_vein, 26.0) * 0.75 + pow(main_vein, 5.0) * 0.12 + pow(fine_vein, 40.0) * 0.35;
+	uv = mat2(vec2(0.87, 0.5), vec2(-0.5, 0.87)) * uv;
+	float turb = texture(noise_tex, uv * 0.9).r * 0.55 + texture(noise_tex, uv * 2.1 + 0.37).r * 0.3 + texture(noise_tex, uv * 4.7 + 0.71).r * 0.15;
+	float stripes = abs(sin(uv.x * 40.0 + turb * 7.0));
+	float patches = smoothstep(0.3, 0.75, texture(noise_tex, uv * 0.35 + 0.13).r);
+	float main_vein = pow(1.0 - stripes, 30.0) * patches;
+	float soft_vein = pow(1.0 - stripes, 4.0) * 0.06 * patches;
+	float fine = abs(sin(uv.x * 97.0 + turb * 13.0 + 1.3));
+	float fine_vein = pow(1.0 - fine, 60.0) * smoothstep(0.5, 0.8, texture(noise_tex, uv * 0.6 + 0.81).r) * 0.4;
+	float vein = main_vein * 0.65 + soft_vein + fine_vein;
 	float cloud = texture(noise_tex, uv * 0.6 + 0.5).r;
 	vec3 base = srgb_to_linear(base_color) * (0.975 + 0.04 * cloud);
-	ALBEDO = mix(base, srgb_to_linear(vein_color), clamp(vein, 0.0, 0.8));
+	ALBEDO = mix(base, srgb_to_linear(vein_color), clamp(vein, 0.0, 0.55));
 	ROUGHNESS = 0.2 + 0.08 * cloud;
 	SPECULAR = 0.55;
 	CLEARCOAT = 0.3;

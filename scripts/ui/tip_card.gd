@@ -31,9 +31,18 @@ static func make(new_tip: TipDefinition, hotkey_hint: String = "") -> TipCard:
 func _ready() -> void:
 	focus_mode = Control.FOCUS_NONE
 	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	mouse_entered.connect(func() -> void: _hover_goal = 1.0)
-	mouse_exited.connect(func() -> void: _hover_goal = 0.0)
-	pressed.connect(func() -> void: _bounce_velocity = -9.0)
+	mouse_entered.connect(func() -> void: _wake(1.0))
+	mouse_exited.connect(func() -> void: _wake(0.0))
+	pressed.connect(func() -> void:
+		_bounce_velocity = -9.0
+		set_process(true))
+	# Idle cards do no work; hovering or pressing wakes them up.
+	set_process(false)
+
+
+func _wake(hover_goal: float) -> void:
+	_hover_goal = hover_goal
+	set_process(true)
 
 
 func _process(delta: float) -> void:
@@ -47,6 +56,8 @@ func _process(delta: float) -> void:
 		redraw = true
 	if redraw:
 		queue_redraw()
+	else:
+		set_process(false)
 
 
 func _draw() -> void:

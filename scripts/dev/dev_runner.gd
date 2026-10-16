@@ -57,6 +57,10 @@ func _run() -> void:
 		"sweep":
 			await _wait_for_cake(context)
 			await _settings_sweep(context)
+		"set_sweep":
+			_build_heavy(context)
+			await _wait_for_cake(context)
+			await _set_sweep(context)
 		"shadow_sweep":
 			_build_heavy(context)
 			await _wait_for_cake(context)
@@ -75,7 +79,7 @@ func _run() -> void:
 		(main.get("tools") as ToolController).select_tool(StringName(args["tool"]))
 	if args.has("shots"):
 		await _take_shots(context)
-	if args.has("shots") or scenario == "bench" or scenario == "sweep" or scenario == "shadow_sweep" or scenario == "input_test":
+	if args.has("shots") or scenario == "bench" or scenario == "sweep" or scenario == "shadow_sweep" or scenario == "set_sweep" or scenario == "input_test":
 		get_tree().quit()
 
 
@@ -92,14 +96,9 @@ func _take_shots(context: EditorContext) -> void:
 	DirAccess.make_dir_recursive_absolute(folder)
 	var names: PackedStringArray = String(args.get("angles", "front,close,high")).split(",")
 	var hud: Node = main.get("hud")
-	if args.get("tools", "false") != "true":
+	var with_tools: bool = args.get("tools", "false") == "true"
+	if not with_tools:
 		(main.get("tools") as ToolController).set_enabled(false)
-	else:
-		var tier: TierData = context.model.tiers[context.model.tiers.size() - 1]
-		var yaw: float = context.camera.yaw
-		var a: float = atan2(cos(yaw), sin(yaw)) - 0.25
-		var base: float = context.model.tier_base_y(tier.id)
-		_send_motion(_screen_of(context, Vector3(cos(a) * tier.radius, base + tier.height * 0.62, sin(a) * tier.radius)), Vector2.ZERO, 0)
 	if args.get("ui", "false") != "true" and hud != null:
 		hud.call("set_interface_visible", false)
 	for angle_name in names:
@@ -115,6 +114,13 @@ func _take_shots(context: EditorContext) -> void:
 		camera.pan = angle[3]
 		# Wait in real time (the display may run at 60 or 120 Hz) so animations finish.
 		await get_tree().create_timer(1.3).timeout
+		if with_tools:
+			# Point at the top tier's side facing this camera, so the bag shows there.
+			var tier: TierData = context.model.tiers[context.model.tiers.size() - 1]
+			var base: float = context.model.tier_base_y(tier.id)
+			var a: float = _front_angle(context) - 0.25
+			_send_motion(_screen_of(context, Vector3(cos(a) * tier.radius, base + tier.height * 0.62, sin(a) * tier.radius)), Vector2.ZERO, 0)
+			await get_tree().create_timer(0.4).timeout
 		await get_tree().process_frame
 		var image: Image = get_viewport().get_texture().get_image()
 		var path: String = folder.path_join("%s_%s.png" % [args.get("scenario", "empty"), angle_name])
@@ -222,7 +228,7 @@ func _benchmark(context: EditorContext) -> void:
 	# 3. Releasing the long stroke: hand-over to the merged batch.
 	var release_start: int = Time.get_ticks_usec()
 	builder.finish()
-	print("BENCH   finish: %.2f ms" % (float(Time.get_ticks_usec() - release_start) / 1000.0))
+	var finish_cost: float = float(Time.get_ticks_usec() - release_start) / 1000.0
 	var stroke := StrokeData.new()
 	stroke.id = context.model.new_id()
 	stroke.tier_id = tier.id
@@ -232,8 +238,10 @@ func _benchmark(context: EditorContext) -> void:
 	context.view.offer_prebuilt(stroke.id, builder, live)
 	var t_cmd: int = Time.get_ticks_usec()
 	context.commands.run(AddStrokeCommand.new(stroke))
-	print("BENCH   command+batch add: %.2f ms" % (float(Time.get_ticks_usec() - t_cmd) / 1000.0))
+	var command_cost: float = float(Time.get_ticks_usec() - t_cmd) / 1000.0
 	var release_cost: float = float(Time.get_ticks_usec() - release_start) / 1000.0
+	# Printing to the console is slow on Windows, so print only after timing.
+	print("BENCH   finish: %.2f ms, command+batch add: %.2f ms" % [finish_cost, command_cost])
 	var worst_after: Dictionary = await _measure(context, 1.0, func(_t: float) -> void: pass)
 	print("BENCH release long stroke: %.2f ms on release; next second worst frame %.2f ms" % [release_cost, worst_after["worst_ms"]])
 
@@ -251,16 +259,39 @@ func _benchmark(context: EditorContext) -> void:
 
 
 func _describe(r: Dictionary) -> String:
-	return "avg %.1f fps, 1%% low %.1f fps, GPU %.2f ms, CPU render %.2f ms, scripts %.2f ms, physics %.2f ms, draw calls %d, primitives %d" % [r["avg_fps"], r["low_fps"], r["gpu_ms"], r["cpu_ms"], r["process_ms"], r["physics_ms"], r["draw_calls"], r["primitives"]]
+	return "avg %.1f fps, 1%% low %.1f fps, worst frame %.1f ms (%d hitches), GPU %.2f ms, CPU render %.2f ms, scripts avg %.2f ms (worst %.2f ms), draw calls %d, primitives %d" % [r["avg_fps"], r["low_fps"], r["worst_ms"], r["hitches"], r["gpu_ms"], r["cpu_ms"], r["process_ms"], r["process_worst_ms"], r["draw_calls"], r["primitives"]]
+
+
+## Times every node's _process each frame: the first probe runs before all
+## other nodes, the second after them. (Godot's own TIME_PROCESS monitor is
+## the worst frame of the last second, refreshed once a second, so it cannot
+## be averaged per frame.)
+class ProcessProbe extends Node:
+	var started: int = 0
+	var partner: ProcessProbe
+	var samples := PackedFloat32Array()
+
+	func _process(_delta: float) -> void:
+		if partner == null:
+			started = Time.get_ticks_usec()
+		else:
+			samples.append(float(Time.get_ticks_usec() - partner.started) / 1000.0)
 
 
 func _measure(_context: EditorContext, seconds: float, each_frame: Callable) -> Dictionary:
 	var viewport_rid: RID = get_viewport().get_viewport_rid()
 	RenderingServer.viewport_set_measure_render_time(viewport_rid, true)
+	var first := ProcessProbe.new()
+	first.process_priority = -1000000
+	var last_probe := ProcessProbe.new()
+	last_probe.process_priority = 1000000
+	last_probe.partner = first
+	add_child(first)
+	add_child(last_probe)
+	# The first frame after turning on render timing is always slow; skip it.
+	await get_tree().process_frame
 	var gpu_total: float = 0.0
 	var cpu_total: float = 0.0
-	var process_total: float = 0.0
-	var physics_total: float = 0.0
 	var times: Array[float] = []
 	var start: int = Time.get_ticks_usec()
 	var last: int = start
@@ -271,13 +302,21 @@ func _measure(_context: EditorContext, seconds: float, each_frame: Callable) -> 
 		await get_tree().process_frame
 		var now: int = Time.get_ticks_usec()
 		times.append(float(now - last) / 1000.0)
+		if times[times.size() - 1] > 20.0:
+			print("BENCH   slow frame %d: %.1f ms" % [times.size() - 1, times[times.size() - 1]])
 		last = now
 		draw_calls = maxi(draw_calls, int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)))
 		primitives = maxi(primitives, int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)))
 		gpu_total += RenderingServer.viewport_get_measured_render_time_gpu(viewport_rid)
 		cpu_total += RenderingServer.viewport_get_measured_render_time_cpu(viewport_rid)
-		process_total += Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
-		physics_total += Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
+	var process_samples: PackedFloat32Array = last_probe.samples
+	first.queue_free()
+	last_probe.queue_free()
+	var process_total: float = 0.0
+	var process_worst: float = 0.0
+	for t in process_samples:
+		process_total += t
+		process_worst = maxf(process_worst, t)
 	times.sort()
 	var total: float = 0.0
 	for t in times:
@@ -285,7 +324,12 @@ func _measure(_context: EditorContext, seconds: float, each_frame: Callable) -> 
 	var avg_ms: float = total / float(times.size())
 	var low_index: int = int(float(times.size()) * 0.99)
 	var low_ms: float = times[mini(low_index, times.size() - 1)]
+	var hitches: int = 0
+	for t in times:
+		if t > maxf(avg_ms * 3.0, 20.0):
+			hitches += 1
 	return {
+		"hitches": hitches,
 		"avg_fps": 1000.0 / avg_ms,
 		"low_fps": 1000.0 / low_ms,
 		"worst_ms": times[times.size() - 1],
@@ -293,8 +337,8 @@ func _measure(_context: EditorContext, seconds: float, each_frame: Callable) -> 
 		"primitives": primitives,
 		"gpu_ms": gpu_total / float(times.size()),
 		"cpu_ms": cpu_total / float(times.size()),
-		"process_ms": process_total / float(times.size()),
-		"physics_ms": physics_total / float(times.size()),
+		"process_ms": process_total / float(maxi(process_samples.size(), 1)),
+		"process_worst_ms": process_worst,
 	}
 
 
@@ -634,3 +678,54 @@ func _shadow_sweep(context: EditorContext) -> void:
 			await _measure(context, 0.4, func(_t: float) -> void: pass)
 			var r: Dictionary = await _measure(context, 1.5, func(_t: float) -> void: pass)
 			print("SHADOWS %-32s GPU %.2f ms  primitives %d  draw calls %d" % [layout[0], r["gpu_ms"], r["primitives"], r["draw_calls"]])
+
+
+## What each part of the bakery set and its lighting costs on the GPU, on the
+## heavy cake: every part is switched off on its own and measured, twice,
+## interleaved with the full scene so a laptop changing speed shows up.
+func _set_sweep(context: EditorContext) -> void:
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	Engine.max_fps = 0
+	var lighting: StudioLighting = main.get("lighting")
+	var env: Environment = lighting.environment
+	var set_node: Node3D = main.get_node("BakerySet")
+	var by_name: Callable = func(root: Node, wanted: String) -> Array[Node]:
+		var out: Array[Node] = []
+		for child in root.get_children():
+			if String(child.name).contains(wanted):
+				out.append(child)
+		return out
+	var toggle_nodes: Callable = func(nodes: Array[Node], on: bool) -> void:
+		for node in nodes:
+			(node as Node3D).visible = on
+	var props: Array[Node] = []
+	for child in set_node.get_children():
+		if child is Node3D and not (child is MeshInstance3D):
+			props.append(child)
+	var parts: Array = [
+		["fog", func(on: bool) -> void: env.fog_enabled = on],
+		["colour adjustment", func(on: bool) -> void: env.adjustment_enabled = on],
+		["glow", func(on: bool) -> void: env.glow_enabled = on],
+		["SSAO", func(on: bool) -> void: env.ssao_enabled = on],
+		["window glow light", func(on: bool) -> void: toggle_nodes.call(by_name.call(lighting, "WindowGlow"), on)],
+		["front fill light", func(on: bool) -> void: lighting.fill.visible = on],
+		["reflection probe", func(on: bool) -> void: toggle_nodes.call(by_name.call(lighting, "RoomReflections"), on)],
+		["dust motes", func(on: bool) -> void: lighting.dust.visible = on],
+		["vignette", func(on: bool) -> void: (lighting.get_node("Vignette") as CanvasLayer).visible = on],
+		["curtains", func(on: bool) -> void: toggle_nodes.call(by_name.call(set_node, "Curtain"), on)],
+		["window view", func(on: bool) -> void: toggle_nodes.call(by_name.call(set_node, "WindowView"), on)],
+		["cloth", func(on: bool) -> void: toggle_nodes.call(by_name.call(set_node, "Cloth"), on)],
+		["props (jars, jug, bowl...)", func(on: bool) -> void: toggle_nodes.call(props, on)],
+		["whole set", func(on: bool) -> void: set_node.visible = on],
+		["depth of field", func(on: bool) -> void: context.camera.attributes = context.camera.dof if on else null],
+	]
+	for round_index in range(2):
+		await _measure(context, 0.4, func(_t: float) -> void: pass)
+		var base: Dictionary = await _measure(context, 1.5, func(_t: float) -> void: pass)
+		print("SET   full scene                    GPU %.2f ms  draw calls %d" % [base["gpu_ms"], base["draw_calls"]])
+		for part: Array in parts:
+			(part[1] as Callable).call(false)
+			await _measure(context, 0.3, func(_t: float) -> void: pass)
+			var r: Dictionary = await _measure(context, 1.5, func(_t: float) -> void: pass)
+			(part[1] as Callable).call(true)
+			print("SET   without %-24s GPU %.2f ms  (saves %.2f)  draw calls %d" % [part[0], r["gpu_ms"], base["gpu_ms"] - r["gpu_ms"], r["draw_calls"]])

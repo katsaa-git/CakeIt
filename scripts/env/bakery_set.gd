@@ -20,9 +20,13 @@ const WINDOW_BOTTOM: float = 2.8
 const WINDOW_TOP: float = 13.2
 const BACKSPLASH_TOP: float = 2.8
 
+## Where _box and the build functions put new nodes (the group being built).
+var _target: Node3D
+
 
 func _ready() -> void:
 	name = "BakerySet"
+	_target = self
 	_build_counter()
 	_build_wall()
 	_build_window()
@@ -30,6 +34,21 @@ func _ready() -> void:
 	_build_shelf()
 	_build_cloth()
 	_build_props()
+	# Each group of small static meshes (the window frame, the shelf and its
+	# jars, each prop) becomes one mesh per material. Groups stay separate so
+	# off-screen ones are still skipped and shadows only draw what they need.
+	for child in get_children():
+		if child.get_class() == "Node3D":
+			StaticBatcher.merge(child)
+
+
+## Starts a named group: everything built next goes under it.
+func _group(group_name: String) -> Node3D:
+	var group := Node3D.new()
+	group.name = group_name
+	add_child(group)
+	_target = group
+	return group
 
 
 func _box(size: Vector3, center: Vector3, material: Material, node_name: String = "") -> MeshInstance3D:
@@ -41,7 +60,7 @@ func _box(size: Vector3, center: Vector3, material: Material, node_name: String 
 	instance.position = center
 	if not node_name.is_empty():
 		instance.name = node_name
-	add_child(instance)
+	_target.add_child(instance)
 	return instance
 
 
@@ -58,21 +77,25 @@ func _plaster() -> StandardMaterial3D:
 
 
 func _build_wall() -> void:
+	_target = self
 	var tiles := Materials.set_shader(TILES)
 	_box(Vector3(40.0, BACKSPLASH_TOP, 0.12), Vector3(0.0, BACKSPLASH_TOP * 0.5, WALL_Z + 0.06), tiles, "Backsplash")
 	var plaster := _plaster()
 	var height: float = 30.0
 	var left_width: float = 20.0 + WINDOW_LEFT
+	_group("BackWall")
 	_box(Vector3(left_width, height, 0.3), Vector3(-20.0 + left_width * 0.5, BACKSPLASH_TOP + height * 0.5, WALL_Z - 0.15), plaster, "WallLeft")
 	_box(Vector3(left_width, height, 0.3), Vector3(20.0 - left_width * 0.5, BACKSPLASH_TOP + height * 0.5, WALL_Z - 0.15), plaster, "WallRight")
 	var above: float = BACKSPLASH_TOP + height - WINDOW_TOP
 	_box(Vector3(WINDOW_RIGHT - WINDOW_LEFT, above, 0.3), Vector3(0.0, WINDOW_TOP + above * 0.5, WALL_Z - 0.15), plaster, "WallAbove")
 	# Side walls so wide shots never show the void.
+	_group("SideWalls")
 	_box(Vector3(0.3, height, 20.0), Vector3(-20.0, height * 0.5, WALL_Z + 10.0), plaster, "SideLeft")
 	_box(Vector3(0.3, height, 20.0), Vector3(20.0, height * 0.5, WALL_Z + 10.0), plaster, "SideRight")
 
 
 func _build_window() -> void:
+	_group("Window")
 	var white := Props.glaze(Color(0.97, 0.96, 0.93), 0.35)
 	var width: float = WINDOW_RIGHT - WINDOW_LEFT
 	var height: float = WINDOW_TOP - WINDOW_BOTTOM
@@ -88,7 +111,7 @@ func _build_window() -> void:
 	view.material_override = Materials.set_shader(WINDOW_VIEW)
 	view.position = Vector3(0.0, center_y, view_z - 0.05)
 	view.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(view)
+	_target.add_child(view)
 	# Recess sides, sill, frame and glazing bars.
 	_box(Vector3(0.25, height, depth), Vector3(WINDOW_LEFT - 0.125, center_y, WALL_Z - depth * 0.5), white)
 	_box(Vector3(0.25, height, depth), Vector3(WINDOW_RIGHT + 0.125, center_y, WALL_Z - depth * 0.5), white)
@@ -109,40 +132,52 @@ func _build_window() -> void:
 	var herb: Node3D = Props.herb_pot()
 	herb.position = Vector3(WINDOW_RIGHT - 1.4, WINDOW_BOTTOM, WALL_Z - 0.25)
 	herb.scale = Vector3.ONE * 1.6
-	add_child(herb)
+	_target.add_child(herb)
 
 
 func _build_curtains() -> void:
+	_group("Curtains")
+	var rail_y: float = WINDOW_TOP + 0.8
+	# Hangs from the rail to just above the sill.
+	var panel := Vector2(2.4, rail_y - (WINDOW_BOTTOM + 0.6))
 	for side in [-1.0, 1.0]:
 		var curtain := MeshInstance3D.new()
 		curtain.name = "Curtain"
 		var plane := PlaneMesh.new()
-		plane.size = Vector2(2.4, 11.6)
-		plane.subdivide_width = 48
-		plane.subdivide_depth = 24
+		plane.size = panel
+		plane.subdivide_width = 96
+		plane.subdivide_depth = 48
 		plane.orientation = PlaneMesh.FACE_Z
 		curtain.mesh = plane
 		var material := ShaderMaterial.new()
 		material.shader = CURTAIN
+		material.set_shader_parameter("panel_size", panel)
+		# Each curtain is tied back toward the outside of the window.
+		material.set_shader_parameter("outer_side", side)
 		curtain.material_override = material
-		var x: float = (WINDOW_RIGHT + 0.3) * side - 0.6 * side
-		curtain.position = Vector3(x, WINDOW_BOTTOM + 0.6 + 5.8 + 0.4, WALL_Z + 0.45)
+		# The shader moves the cloth off its flat plane.
+		curtain.extra_cull_margin = 1.0
+		var x: float = (WINDOW_RIGHT - 0.3) * side
+		curtain.position = Vector3(x, rail_y - panel.y * 0.5, WALL_Z + 0.45)
 		curtain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		add_child(curtain)
+		_target.add_child(curtain)
 	# Curtain rail.
 	var rail := CylinderMesh.new()
 	rail.top_radius = 0.07
 	rail.bottom_radius = 0.07
+	rail.radial_segments = 16
+	rail.rings = 1
 	rail.height = WINDOW_RIGHT - WINDOW_LEFT + 4.0
 	var rail_node := MeshInstance3D.new()
 	rail_node.mesh = rail
 	rail_node.material_override = Props.wood(Color(0.6, 0.44, 0.3))
 	rail_node.rotation.z = PI * 0.5
-	rail_node.position = Vector3(0.0, WINDOW_TOP + 0.8, WALL_Z + 0.5)
-	add_child(rail_node)
+	rail_node.position = Vector3(0.0, rail_y, WALL_Z + 0.5)
+	_target.add_child(rail_node)
 
 
 func _build_shelf() -> void:
+	_group("Shelf")
 	var plank := Props.wood(Color(0.74, 0.56, 0.4))
 	var shelf_y: float = 7.6
 	_box(Vector3(5.6, 0.18, 1.3), Vector3(10.2, shelf_y, WALL_Z + 0.65), plank, "Shelf")
@@ -152,14 +187,15 @@ func _build_shelf() -> void:
 	for entry: Array in jars:
 		var jar: Node3D = Props.storage_jar(entry[0], entry[1])
 		jar.position = Vector3(entry[2], shelf_y + 0.09, WALL_Z + 0.65)
-		add_child(jar)
+		_target.add_child(jar)
 	var plates: Node3D = Props.plate_stack(4)
 	plates.position = Vector3(12.0, shelf_y + 0.09, WALL_Z + 0.6)
 	plates.scale = Vector3.ONE * 0.8
-	add_child(plates)
+	_target.add_child(plates)
 
 
 func _build_cloth() -> void:
+	_target = self
 	# A linen tea towel under the stand, with soft folds toward its edges.
 	var size: float = 5.6
 	var steps: int = 40

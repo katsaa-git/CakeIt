@@ -121,7 +121,7 @@ static func _ease_pop(t: float) -> float:
 func _build() -> void:
 	# Translucent plastic bag.
 	var bag_material := StandardMaterial3D.new()
-	bag_material.albedo_color = Color(1.0, 1.0, 1.0, 0.38)
+	bag_material.albedo_color = Color(1.0, 1.0, 1.0, 0.32)
 	bag_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	bag_material.roughness = 0.28
 	bag_material.metallic_specular = 0.6
@@ -141,12 +141,14 @@ func _build() -> void:
 	bag.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_body.add_child(bag)
 
-	# Frosting inside the bag, in the current colour.
+	# Frosting inside the bag, in the current colour: a well-filled bag, so it
+	# reads as a piping bag and not an empty bubble.
 	_frosting_material.albedo_color = Color(1.0, 0.96, 0.9)
 	_frosting_material.roughness = 0.55
 	var fill_points := PackedVector2Array([
 		Vector2(0.0, 0.37), Vector2(0.095, 0.37), Vector2(0.14, 0.46), Vector2(0.2, 0.61),
-		Vector2(0.25, 0.76), Vector2(0.265, 0.84), Vector2(0.2, 0.88), Vector2(0.0, 0.9),
+		Vector2(0.255, 0.78), Vector2(0.28, 0.92), Vector2(0.26, 1.03), Vector2(0.2, 1.11),
+		Vector2(0.1, 1.15), Vector2(0.0, 1.16),
 	])
 	var fill_profile: Dictionary = LatheMesh.smooth_profile(fill_points)
 	var fill := MeshInstance3D.new()

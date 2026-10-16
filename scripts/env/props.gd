@@ -3,6 +3,8 @@ extends RefCounted
 ## Simple bakery props built from code. They sit around the cake, mostly out
 ## of focus, so they only need nice silhouettes and materials.
 
+static var _materials: Dictionary = {}
+
 
 static func _mesh(mesh: Mesh, material: Material, position := Vector3.ZERO) -> MeshInstance3D:
 	var instance := MeshInstance3D.new()
@@ -17,7 +19,12 @@ static func _lathe(points: Array, segments: int = 48) -> ArrayMesh:
 	return LatheMesh.build(profile["points"], profile["normals"], segments)
 
 
+## Glazed ceramic. Materials are shared by colour, so identical props can be
+## merged into one draw call (see StaticBatcher).
 static func glaze(color: Color, roughness: float = 0.18) -> StandardMaterial3D:
+	var key: String = "glaze:%s:%.2f" % [color.to_html(), roughness]
+	if _materials.has(key):
+		return _materials[key]
 	var material := StandardMaterial3D.new()
 	material.albedo_color = color
 	material.roughness = roughness
@@ -25,6 +32,7 @@ static func glaze(color: Color, roughness: float = 0.18) -> StandardMaterial3D:
 	material.clearcoat_enabled = true
 	material.clearcoat = 0.5
 	material.clearcoat_roughness = 0.1
+	_materials[key] = material
 	return material
 
 
@@ -41,9 +49,13 @@ static func glass() -> StandardMaterial3D:
 
 
 static func wood(color: Color = Color(0.72, 0.53, 0.36)) -> StandardMaterial3D:
+	var key: String = "wood:%s" % color.to_html()
+	if _materials.has(key):
+		return _materials[key]
 	var material := StandardMaterial3D.new()
 	material.albedo_color = color
 	material.roughness = 0.6
+	_materials[key] = material
 	return material
 
 
@@ -107,8 +119,9 @@ static func flower_jug() -> Node3D:
 		stem_node.basis = Basis(Quaternion(Vector3.UP, lean))
 		stem_node.position = Vector3(0.0, 1.3, 0.0) + lean * length * 0.5
 		root.add_child(stem_node)
-		var bloom_material := Materials.standard(petal_colors[i % petal_colors.size()], 0.65)
-		bloom_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+		# Petals are open cups, seen from inside too: a copy with back faces on
+		# (the cached material itself is shared and must stay unchanged).
+		var bloom_material: StandardMaterial3D = _two_sided(petal_colors[i % petal_colors.size()], 0.65)
 		var head := _mesh(tulip, bloom_material, Vector3(0.0, 1.3, 0.0) + lean * (length - 0.05))
 		head.basis = Basis(Quaternion(Vector3.UP, lean)).rotated(lean, rng.randf() * TAU).scaled(Vector3.ONE * rng.randf_range(0.9, 1.2))
 		root.add_child(head)
@@ -150,16 +163,96 @@ static func storage_jar(contents: Color, height: float = 1.2) -> Node3D:
 	return root
 
 
+## A little pot of basil: a terracotta pot with dark soil and soft, cupped
+## leaves in opposite pairs up each stem, each pair turned a quarter from the
+## one below, like the real plant. Low-poly; it sits out of focus on the sill.
 static func herb_pot() -> Node3D:
 	var root := Node3D.new()
 	root.name = "HerbPot"
-	root.add_child(_mesh(_lathe([Vector2(0, 0), Vector2(0.32, 0), Vector2(0.42, 0.55), Vector2(0.47, 0.58), Vector2(0.47, 0.68), Vector2(0, 0.66)]), Materials.standard(Color(0.82, 0.52, 0.38), 0.85)))
+	var terracotta := Materials.standard(Color(0.8, 0.5, 0.36), 0.85)
+	root.add_child(_mesh(_lathe([Vector2(0, 0), Vector2(0.3, 0), Vector2(0.33, 0.04), Vector2(0.4, 0.5), Vector2(0.47, 0.52),
+		Vector2(0.48, 0.66), Vector2(0.44, 0.67), Vector2(0.4, 0.6), Vector2(0.0, 0.58)], 28), terracotta))
+	root.add_child(_mesh(_lathe([Vector2(0, 0.6), Vector2(0.4, 0.6), Vector2(0.0, 0.62)], 20), Materials.standard(Color(0.3, 0.22, 0.17), 0.95)))
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5
-	var leaf_material := Materials.standard(Color(0.48, 0.66, 0.42), 0.7)
-	for i in range(12):
-		var leaf := SphereMesh.new()
-		leaf.radius = rng.randf_range(0.14, 0.22)
-		leaf.height = leaf.radius * 1.6
-		root.add_child(_mesh(leaf, leaf_material, Vector3(rng.randf_range(-0.3, 0.3), 0.75 + rng.randf() * 0.45, rng.randf_range(-0.3, 0.3))))
+	var stem_material := Materials.standard(Color(0.42, 0.56, 0.3), 0.7)
+	var leaf_mesh: ArrayMesh = _leaf_mesh()
+	var greens: Array[StandardMaterial3D] = [_two_sided(Color(0.42, 0.64, 0.33), 0.55), _two_sided(Color(0.5, 0.7, 0.38), 0.55)]
+	for i in range(8):
+		var a: float = TAU * float(i) / 7.0 + rng.randf_range(-0.3, 0.3)
+		var base := Vector3(cos(a) * 0.2, 0.6, sin(a) * 0.2) if i > 0 else Vector3(0.0, 0.6, 0.0)
+		var lean := Vector3(cos(a) * 0.4, 1.0, sin(a) * 0.4).normalized() if i > 0 else Vector3.UP
+		var height: float = rng.randf_range(0.5, 0.75) if i > 0 else 0.85
+		var stem := CylinderMesh.new()
+		stem.top_radius = 0.012
+		stem.bottom_radius = 0.018
+		stem.height = height
+		stem.radial_segments = 5
+		stem.rings = 1
+		var stem_node := _mesh(stem, stem_material, base + lean * height * 0.5)
+		stem_node.basis = Basis(Quaternion(Vector3.UP, lean))
+		root.add_child(stem_node)
+		var turn: float = rng.randf() * TAU
+		var pairs: int = 4
+		for k in range(pairs):
+			var t: float = 0.35 + 0.65 * float(k) / float(pairs - 1)
+			var size: float = lerpf(1.0, 0.5, float(k) / float(pairs - 1)) * rng.randf_range(0.85, 1.1)
+			for side in [0.0, PI]:
+				var yaw: float = turn + side + float(k) * PI * 0.5
+				var leaf := _mesh(leaf_mesh, greens[(i + k) % 2], base + lean * height * t)
+				# Leaves reach out and up a little, then droop at the tip (the mesh does that).
+				leaf.basis = Basis(Vector3.UP, yaw) * Basis(Vector3.RIGHT, -0.35).scaled(Vector3.ONE * size)
+				root.add_child(leaf)
+		# A small cluster of young leaves at the top.
+		for side in [0.4, 2.5, 4.6]:
+			var tip := _mesh(leaf_mesh, greens[1], base + lean * height)
+			tip.basis = Basis(Vector3.UP, turn + side) * Basis(Vector3.RIGHT, -0.9).scaled(Vector3.ONE * 0.4)
+			root.add_child(tip)
 	return root
+
+
+## One basil leaf along +Z: an oval folded along its midrib, cupped, with the
+## tip drooping. About 40 triangles.
+static func _leaf_mesh() -> ArrayMesh:
+	var out := MeshArrays.new()
+	var length: float = 0.42
+	var width: float = 0.24
+	var steps: int = 6
+	for i in range(steps + 1):
+		var t: float = float(i) / float(steps)
+		var w: float = sin(PI * pow(t, 0.75)) * width * 0.5
+		for s in [-1.0, -0.5, 0.0, 0.5, 1.0]:
+			var x: float = s * w
+			var y: float = absf(s) * w * 0.45 - t * t * length * 0.35
+			out.add_vertex(Vector3(x, y, t * length), Vector3.UP, Color.WHITE, Vector2((s + 1.0) * 0.5, t))
+	for i in range(steps):
+		for j in range(4):
+			var a: int = i * 5 + j
+			var b: int = a + 1
+			var c: int = a + 5
+			var d: int = c + 1
+			out.add_triangle(a, c, b)
+			out.add_triangle(b, c, d)
+	# Smooth normals from the faces.
+	var sums := PackedVector3Array()
+	sums.resize(out.verts.size())
+	for i in range(0, out.indices.size(), 3):
+		var ia: int = out.indices[i]
+		var ib: int = out.indices[i + 1]
+		var ic: int = out.indices[i + 2]
+		var face: Vector3 = (out.verts[ic] - out.verts[ia]).cross(out.verts[ib] - out.verts[ia])
+		sums[ia] += face
+		sums[ib] += face
+		sums[ic] += face
+	for i in range(sums.size()):
+		out.normals[i] = sums[i].normalized() if sums[i].length_squared() > 0.0 else Vector3.UP
+	return out.to_mesh()
+
+
+static func _two_sided(color: Color, roughness: float) -> StandardMaterial3D:
+	var key: String = "two_sided:%s:%.2f" % [color.to_html(), roughness]
+	if not _materials.has(key):
+		var material: StandardMaterial3D = Materials.standard(color, roughness).duplicate()
+		material.cull_mode = BaseMaterial3D.CULL_DISABLED
+		_materials[key] = material
+	return _materials[key]

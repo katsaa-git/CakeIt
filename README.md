@@ -8,8 +8,9 @@ fit each customer's theme. Windows PC on Steam only, mouse-first, built in Godot
 
 1. Install Godot 4.x (Standard build) from godotengine.org.
 2. In Godot's Project Manager choose **Import**, pick this folder's `project.godot`, then **Import & Edit**.
-3. Press **F5** to run. You should see a pink cake tier on a grey background, and the
-   Output panel should print `CakeGame project loaded OK`.
+3. Press **F5** to run. You should see a cake on its stand in a sunny seaside
+   bakery, ready to decorate (press **H** in game for the controls). Design and
+   tooling notes are in `docs/DECORATING_NOTES.md`.
 
 If your Godot is newer than 4.6, it may offer to convert the project. Accept.
 

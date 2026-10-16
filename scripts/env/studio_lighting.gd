@@ -33,10 +33,11 @@ func _build_environment() -> void:
 	environment.background_color = Color(0.93, 0.88, 0.82)
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_color = Color(0.98, 0.91, 0.84)
-	environment.ambient_light_energy = 0.3
+	environment.ambient_light_energy = 0.22
 	environment.reflected_light_source = Environment.REFLECTION_SOURCE_BG
 	environment.tonemap_mode = Environment.TONE_MAPPER_AGX
-	environment.tonemap_exposure = 1.0
+	environment.tonemap_exposure = 1.05
+	environment.tonemap_agx_contrast = 1.45
 	environment.ssao_enabled = true
 	environment.ssao_radius = 0.7
 	environment.ssao_intensity = 1.5
@@ -46,7 +47,7 @@ func _build_environment() -> void:
 	environment.glow_intensity = 0.18
 	environment.glow_strength = 0.9
 	environment.glow_bloom = 0.04
-	environment.glow_hdr_threshold = 1.05
+	environment.glow_hdr_threshold = 1.3
 	environment.glow_blend_mode = Environment.GLOW_BLEND_MODE_ADDITIVE
 	environment.fog_enabled = true
 	environment.fog_mode = Environment.FOG_MODE_EXPONENTIAL
@@ -79,10 +80,10 @@ func _build_lights() -> void:
 
 	fill = DirectionalLight3D.new()
 	fill.name = "FrontFill"
-	fill.basis = Basis.looking_at(Vector3(0.62, -0.38, -0.69).normalized(), Vector3.UP)
+	fill.basis = Basis.looking_at(Vector3(0.85, -0.35, -0.4).normalized(), Vector3.UP)
 	fill.light_color = Color(0.98, 0.95, 0.93)
-	fill.light_energy = 0.62
-	fill.light_specular = 0.25
+	fill.light_energy = 0.55
+	fill.light_specular = 0.6
 	fill.shadow_enabled = false
 	add_child(fill)
 
@@ -101,9 +102,15 @@ func _build_lights() -> void:
 func _build_probe() -> void:
 	var probe := ReflectionProbe.new()
 	probe.name = "RoomReflections"
-	probe.position = Vector3(0.0, 6.0, 0.0)
-	probe.size = Vector3(40.0, 28.0, 22.0)
-	probe.box_projection = true
+	# It only influences the space around the cake and stand (the nozzle, the
+	# glossy frosting, the plate and the counter close by), so the far walls do
+	# not pay for it, but it still captures the whole room.
+	probe.position = Vector3(0.0, 3.0, 0.0)
+	probe.size = Vector3(14.0, 9.0, 11.0)
+	probe.origin_offset = Vector3(0.0, 1.5, 0.0)
+	probe.max_distance = 30.0
+	probe.blend_distance = 2.0
+	probe.box_projection = false
 	probe.interior = true
 	probe.ambient_mode = ReflectionProbe.AMBIENT_COLOR
 	probe.ambient_color = Color(0.98, 0.92, 0.86)
