@@ -16,6 +16,13 @@ func follows_direction() -> bool:
 	return false
 
 
+## Override: true when one stamp on its own shows the tip best (flowers and
+## rosettes); false for stamps that read as a row (shells, grass, scallops).
+## Used for the shelf picture.
+func shows_alone() -> bool:
+	return false
+
+
 ## Override: rough size of one stamp for picking, in game units:
 ## [centre offset along forward, half-length along forward, half-width, height].
 func collision_extent(context: StampContext) -> Array:

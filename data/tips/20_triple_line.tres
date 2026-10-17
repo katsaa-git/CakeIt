@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="TipDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/piping/tip_definition.gd" id="1_tip"]
+[ext_resource type="Script" path="res://scripts/piping/profiles/round_profile.gd" id="2_profile"]
+
+[sub_resource type="Resource" id="Profile_triple"]
+script = ExtResource("2_profile")
+squash = 0.95
+sides = 12
+
+[resource]
+script = ExtResource("1_tip")
+id = &"triple_line"
+display_name = "Triple Line"
+description = "Three little openings side by side: pipe three parallel lines at once for stripes, garlands and swirls. A two-tone bag alternates the lines."
+sort_order = 92
+tags = PackedStringArray("line", "stripes", "multi")
+profile = SubResource("Profile_triple")
+lift = 0.55
+end_style = 0
+dollop_height = 1.0
+ring_spacing = 0.35
+speed_thinning = 0.05
+dwell_growth = 0.4
+openings = PackedVector2Array(-0.95, 0, 0, 0, 0.95, 0)
+opening_size = 0.32
+size_names = PackedStringArray("Small", "Medium", "Large")
+size_presets = PackedFloat32Array(0.05, 0.07, 0.095)
+min_size = 0.035
+max_size = 0.14

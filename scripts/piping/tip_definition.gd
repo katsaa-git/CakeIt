@@ -65,6 +65,17 @@ enum EndStyle {
 @export_range(0.5, 8.0) var wave_length: float = 2.0
 ## Rope-like twist along a line, radians per tip radius travelled.
 @export_range(-2.0, 2.0) var twist_rate: float = 0.0
+## Extra path smoothing (half-width of the smoothing window, in rings;
+## 0 = the usual 5). Higher is steadier, for lettering.
+@export_range(0, 12) var smoothing: int = 0
+
+@export_group("Openings")
+## Tips with several openings (e.g. a triple-line tip): where each opening
+## sits, in tip radii (x across the line, y away from the cake). Each one
+## pipes its own line with the tip's profile. Empty or one = a single opening.
+@export var openings: PackedVector2Array = PackedVector2Array()
+## Size of each opening, as a fraction of the tip radius.
+@export_range(0.1, 1.0) var opening_size: float = 0.35
 
 @export_group("Sizes")
 @export var size_names: PackedStringArray = PackedStringArray(["Small", "Medium", "Large"])

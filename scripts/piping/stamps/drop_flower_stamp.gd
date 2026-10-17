@@ -24,9 +24,13 @@ const RINGS: int = 10
 var _dot: ProfileShape
 
 
+func shows_alone() -> bool:
+	return true
+
+
 func emit(out: MeshArrays, context: StampContext) -> void:
 	var r: float = context.radius
-	var colors: PackedColorArray = TubeBuilder.shaded_colors(context.shape, context.color)
+	var colors: PackedColorArray = context.colors_for(context.shape)
 	var turn: float = context.rng.randf() * TAU
 	var centers := PackedVector3Array()
 	var ups := PackedVector3Array()
@@ -55,6 +59,7 @@ func _emit_center(out: MeshArrays, context: StampContext, top: float) -> void:
 		_dot = ProfileShape.circle(12, 1.0)
 	var r: float = context.radius * 0.32
 	var tint: Color = context.color.lerp(center_tint, center_tint_amount)
+	tint.a = context.color.a
 	var colors: PackedColorArray = TubeBuilder.shaded_colors(_dot, tint, 0.0)
 	var centers := PackedVector3Array()
 	var ups := PackedVector3Array()

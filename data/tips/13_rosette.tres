@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="TipDefinition" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/piping/tip_definition.gd" id="1_tip"]
+[ext_resource type="Script" path="res://scripts/piping/profiles/star_profile.gd" id="2_profile"]
+[ext_resource type="Script" path="res://scripts/piping/stamps/rosette_stamp.gd" id="3_stamp"]
+
+[sub_resource type="Resource" id="Profile_rosette"]
+script = ExtResource("2_profile")
+points = 8
+depth = 0.3
+ridge_fullness = 1.3
+squash = 0.95
+sides = 40
+
+[sub_resource type="Resource" id="Stamp_rosette"]
+script = ExtResource("3_stamp")
+turns = 1.3
+reach = 1.25
+crown = 0.5
+twist = 1.4
+
+[resource]
+script = ExtResource("1_tip")
+id = &"rosette"
+display_name = "Rosette Swirl"
+description = "A big open star (like a 1M): one squeeze swirls a whole rosette. Drag for a row of them, perfect for cupcake-style tops and borders."
+sort_order = 32
+tags = PackedStringArray("rosette", "swirl", "star", "border")
+profile = SubResource("Profile_rosette")
+behavior = 1
+stamp = SubResource("Stamp_rosette")
+stamp_spacing = 3.8
+ring_spacing = 0.3
+speed_thinning = 0.0
+dwell_growth = 0.35
+size_names = PackedStringArray("Small", "Medium", "Large")
+size_presets = PackedFloat32Array(0.06, 0.085, 0.115)
+min_size = 0.035
+max_size = 0.16

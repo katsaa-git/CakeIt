@@ -8,6 +8,8 @@ shader_type spatial;
 //    pushing a little ridge of frosting ahead of it.
 render_mode diffuse_burley, specular_schlick_ggx;
 
+#include "res://art/shaders/shimmer.gdshaderinc"
+
 uniform vec3 coat_color : source_color = vec3(1.0, 0.96, 0.89);
 uniform vec3 prev_color : source_color = vec3(1.0, 0.96, 0.89);
 uniform float coated : hint_range(0.0, 1.0) = 1.0;
@@ -15,6 +17,9 @@ uniform float prev_coated : hint_range(0.0, 1.0) = 1.0;
 uniform float smoothness : hint_range(0.0, 1.0) = 0.45;
 uniform float prev_smoothness : hint_range(0.0, 1.0) = 0.45;
 uniform float sweep : hint_range(0.0, 1.0) = 1.0;
+// Metallic finish of the new and the previous coat (0 plain, 1 metallic).
+uniform float coat_shine : hint_range(0.0, 1.0) = 0.0;
+uniform float prev_shine : hint_range(0.0, 1.0) = 0.0;
 uniform float tier_radius = 1.4;
 uniform float tier_height = 1.1;
 uniform float highlight : hint_range(0.0, 1.0) = 0.0;
@@ -130,10 +135,19 @@ void fragment() {
 		NORMAL = bumped / bumped_length;
 	}
 
+	float rough = mix(naked_rough, 0.46 - 0.08 * smooth_now, coated_now);
+	float metal = 0.0;
+	float spec = 0.42;
+	float shine = mix(prev_shine, coat_shine, is_new) * coated_now;
+	apply_finish(shine, NORMAL, VIEW, albedo, rough, metal, spec);
+	vec3 normal = NORMAL;
+	apply_shimmer(obj_pos, mat3(VIEW_MATRIX) * mat3(MODEL_MATRIX), albedo, rough, metal, spec, normal);
+	NORMAL = normal;
 	ALBEDO = albedo;
-	ROUGHNESS = mix(naked_rough, 0.46 - 0.08 * smooth_now, coated_now);
-	SPECULAR = 0.42;
-	SSS_STRENGTH = mix(0.08, 0.18, max(coated_now, frost_mask));
+	ROUGHNESS = rough;
+	METALLIC = metal;
+	SPECULAR = spec;
+	SSS_STRENGTH = mix(0.08, 0.18, max(coated_now, frost_mask)) * (1.0 - metal);
 	RIM = 0.05;
 	RIM_TINT = 0.7;
 	EMISSION = albedo * highlight * 0.32;

@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="TipDefinition" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/piping/tip_definition.gd" id="1_tip"]
+[ext_resource type="Script" path="res://scripts/piping/profiles/round_profile.gd" id="2_profile"]
+[ext_resource type="Script" path="res://scripts/piping/stamps/shell_stamp.gd" id="3_stamp"]
+
+[sub_resource type="Resource" id="Profile_bead"]
+script = ExtResource("2_profile")
+squash = 0.95
+sides = 24
+
+[sub_resource type="Resource" id="Stamp_bead"]
+script = ExtResource("3_stamp")
+length = 2.1
+height = 0.95
+head_at = 0.42
+twist = 0.0
+
+[resource]
+script = ExtResource("1_tip")
+id = &"bead"
+display_name = "Bead Border"
+description = "A round tip squeezed and pulled: a string of glossy beads, each tucking its tail under the next. Click for one pearl-like bead."
+sort_order = 42
+tags = PackedStringArray("border", "bead", "pearl")
+profile = SubResource("Profile_bead")
+behavior = 1
+stamp = SubResource("Stamp_bead")
+stamp_spacing = 1.45
+ring_spacing = 0.3
+speed_thinning = 0.0
+dwell_growth = 0.5
+size_names = PackedStringArray("Small", "Medium", "Large")
+size_presets = PackedFloat32Array(0.04, 0.06, 0.085)
+min_size = 0.025
+max_size = 0.14

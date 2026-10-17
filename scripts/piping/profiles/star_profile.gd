@@ -2,10 +2,10 @@
 class_name StarProfile
 extends TipProfile
 ## A star tip: ridges around the outside. Open stars have soft shallow ridges;
-## closed stars have more, deeper and tighter grooves. Also used for the
-## lobed drop-flower shape.
+## closed stars have more, deeper and tighter grooves; French stars have many
+## fine ones. Also used for the lobed drop-flower shape.
 
-@export_range(3, 16) var points: int = 8
+@export_range(3, 24) var points: int = 8
 ## How deep the grooves cut in, as a fraction of the radius.
 @export_range(0.0, 0.8) var depth: float = 0.25
 ## Above 1 makes the grooves narrow and the ridges broad and rounded.

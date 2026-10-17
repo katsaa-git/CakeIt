@@ -97,7 +97,7 @@ func _sample_mesh(tip: TipDefinition) -> ArrayMesh:
 	var builder := StrokeBuilder.new(tip, RADIUS, Color.WHITE, 3)
 	builder.fallback_forward = Vector3.RIGHT
 	var is_stamp: bool = tip.behavior == TipDefinition.Behavior.STAMP
-	if (is_stamp and tip.stamp is DropFlowerStamp) or (not is_stamp and tip.click_length > 0.0 and tip.wave_amplitude == 0.0):
+	if (is_stamp and tip.stamp.shows_alone()) or (not is_stamp and tip.click_length > 0.0 and tip.wave_amplitude == 0.0):
 		builder.add_sample(Vector3.ZERO, Vector3.UP, 1.3)
 	elif is_stamp:
 		var row: float = tip.stamp_spacing * RADIUS * 2.0

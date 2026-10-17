@@ -202,7 +202,7 @@ func _place(def: DecorationDefinition, tier_id: int, local_position: Vector3, no
 	decoration.transform = Transform3D(basis, local_position - normal.normalized() * sink)
 	decoration.color = def.pick_color(context.color, _rng)
 	decoration.rng_seed = _rng.randi()
-	if def.builder is TopperBuilder:
+	if def.uses_text():
 		decoration.text = context.decoration_text
 	_pending.append(decoration)
 	_preview_layer(tier_id).add(decoration)
@@ -230,7 +230,7 @@ func _preview_layer(tier_id: int) -> DecorationLayer:
 	var layer: DecorationLayer = _preview_layers.get(tier_id)
 	if layer == null or not is_instance_valid(layer):
 		layer = DecorationLayer.new()
-		layer.setup(tier_id, context.model)
+		layer.setup(tier_id, context.model, context.view.view_for(tier_id).materials)
 		var view: TierView = context.view.view_for(tier_id)
 		view.add_child(layer)
 		layer.name = "PlacingPreview"

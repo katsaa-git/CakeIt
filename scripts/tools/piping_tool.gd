@@ -60,6 +60,7 @@ func setup(new_context: EditorContext) -> void:
 	context.tip_changed.connect(func(_tip: TipDefinition) -> void: _refresh_looks())
 	context.size_changed.connect(func(_size: float, _index: int) -> void: _refresh_looks())
 	context.color_changed.connect(func(_color: Color) -> void: _refresh_looks())
+	context.stripe_changed.connect(func(_on: bool, _color: Color) -> void: _refresh_looks())
 
 
 func activate() -> void:
@@ -130,7 +131,7 @@ func _refresh_looks() -> void:
 		return
 	bag.set_tip(context.tip)
 	bag.set_color(context.color)
-	preview.configure(context.tip, context.size, context.color)
+	preview.configure(context.tip, context.size, context.color, context.stripe())
 
 
 func _begin(hit: CakePicker.Hit) -> void:
@@ -139,12 +140,12 @@ func _begin(hit: CakePicker.Hit) -> void:
 	var view: TierView = context.view.view_for(_tier_id)
 	if view == null:
 		return
-	_builder = StrokeBuilder.new(context.tip, context.size, context.color, randi())
+	_builder = StrokeBuilder.new(context.tip, context.size, context.color, randi(), context.stripe(), context.shine)
 	# For a single-click stamp, face the shell or leaf toward the camera's right.
 	var right: Vector3 = context.camera.global_basis.x
 	_builder.fallback_forward = context.picker.spin_root.global_basis.inverse() * right
 	_live = LiveStroke.new()
-	_live.setup(_builder, Materials.buttercream())
+	_live.setup(_builder, view.strokes.material)
 	view.add_child(_live)
 	_press_time = 0.0
 	_speed = 0.0
@@ -228,6 +229,8 @@ func _finish() -> void:
 	stroke.size_index = context.size_index
 	stroke.radius = builder.radius
 	stroke.color = builder.color
+	stroke.stripe = builder.stripe
+	stroke.shine = builder.shine
 	stroke.rng_seed = builder.rng_seed
 	stroke.forward = builder.fallback_forward
 	builder.export_samples(stroke)

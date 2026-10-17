@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="TipDefinition" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/piping/tip_definition.gd" id="1_tip"]
+[ext_resource type="Script" path="res://scripts/piping/profiles/round_profile.gd" id="2_profile"]
+[ext_resource type="Script" path="res://scripts/piping/stamps/scallop_stamp.gd" id="3_stamp"]
+
+[sub_resource type="Resource" id="Profile_lace"]
+script = ExtResource("2_profile")
+squash = 0.95
+sides = 12
+
+[sub_resource type="Resource" id="Stamp_lace"]
+script = ExtResource("3_stamp")
+depth = 0.42
+line = 0.42
+dots = 3
+drop = true
+
+[resource]
+script = ExtResource("1_tip")
+id = &"lace_scallop"
+display_name = "Lace Scallop"
+description = "Drag along a tier for a scalloped lace border: joined half-moons with tiny dots and a teardrop in each. They hang down on the side and bow out on top."
+sort_order = 44
+tags = PackedStringArray("border", "lace", "scallop", "elegant")
+profile = SubResource("Profile_lace")
+behavior = 1
+stamp = SubResource("Stamp_lace")
+stamp_spacing = 4.2
+ring_spacing = 0.3
+speed_thinning = 0.0
+dwell_growth = 0.2
+size_names = PackedStringArray("Small", "Medium", "Large")
+size_presets = PackedFloat32Array(0.04, 0.055, 0.075)
+min_size = 0.025
+max_size = 0.11

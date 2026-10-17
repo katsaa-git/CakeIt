@@ -16,6 +16,8 @@ var rng_seed: int = 0
 var path := PackedFloat32Array()
 ## Words on a topper sign (empty for everything else).
 var text: String = ""
+## 0 = plain, 1 = metallic paint, in between pearly (see Finish).
+var shine: float = 0.0
 
 
 func duplicate_data() -> DecorationData:
@@ -28,6 +30,7 @@ func duplicate_data() -> DecorationData:
 	copy.rng_seed = rng_seed
 	copy.path = path.duplicate()
 	copy.text = text
+	copy.shine = shine
 	return copy
 
 
@@ -42,6 +45,8 @@ func to_dict() -> Dictionary:
 	}
 	if not path.is_empty():
 		data["path"] = SaveMath.pack_floats(path, 0.0001)
+	if shine > 0.0:
+		data["shine"] = snappedf(shine, 0.01)
 	if not text.is_empty():
 		data["text"] = text
 	return data
@@ -57,4 +62,5 @@ static func from_dict(data: Dictionary) -> DecorationData:
 	deco.rng_seed = int(data.get("seed", 0))
 	deco.path = SaveMath.unpack_floats(data.get("path", []))
 	deco.text = String(data.get("text", ""))
+	deco.shine = clampf(float(data.get("shine", 0.0)), 0.0, 1.0)
 	return deco

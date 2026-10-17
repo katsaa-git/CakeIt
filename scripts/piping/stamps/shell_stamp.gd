@@ -23,7 +23,7 @@ func follows_direction() -> bool:
 
 func emit(out: MeshArrays, context: StampContext) -> void:
 	var r: float = context.radius
-	var colors: PackedColorArray = TubeBuilder.shaded_colors(context.shape, context.color)
+	var colors: PackedColorArray = context.colors_for(context.shape)
 	var centers := PackedVector3Array()
 	var ups := PackedVector3Array()
 	var scales := PackedFloat32Array()

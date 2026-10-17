@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="TipDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/piping/tip_definition.gd" id="1_tip"]
+[ext_resource type="Script" path="res://scripts/piping/profiles/star_profile.gd" id="2_profile"]
+
+[sub_resource type="Resource" id="Profile_french_star"]
+script = ExtResource("2_profile")
+points = 16
+depth = 0.17
+ridge_fullness = 1.9
+squash = 0.95
+sides = 96
+
+[resource]
+script = ExtResource("1_tip")
+id = &"french_star"
+display_name = "French Star"
+description = "Many fine, close ridges for elegant pleated borders and soft-ridged kisses."
+sort_order = 22
+tags = PackedStringArray("border", "rosette", "star", "elegant")
+profile = SubResource("Profile_french_star")
+lift = 0.55
+end_style = 1
+end_length = 1.5
+dollop_height = 1.35
+dollop_twist = 0.5
+ring_spacing = 0.26
+speed_thinning = 0.12
+dwell_growth = 0.7
+size_names = PackedStringArray("Small", "Medium", "Large")
+size_presets = PackedFloat32Array(0.05, 0.08, 0.115)
+min_size = 0.03
+max_size = 0.18

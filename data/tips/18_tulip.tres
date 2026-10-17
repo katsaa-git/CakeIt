@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="TipDefinition" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/piping/tip_definition.gd" id="1_tip"]
+[ext_resource type="Script" path="res://scripts/piping/profiles/round_profile.gd" id="2_profile"]
+[ext_resource type="Script" path="res://scripts/piping/stamps/petal_flower_stamp.gd" id="3_stamp"]
+
+[sub_resource type="Resource" id="Profile_tulip"]
+script = ExtResource("2_profile")
+squash = 1.0
+sides = 24
+
+[sub_resource type="Resource" id="Stamp_tulip"]
+script = ExtResource("3_stamp")
+row_petals = PackedInt32Array(3, 3)
+row_radius = PackedFloat32Array(0.42, 0.22)
+row_height = PackedFloat32Array(1.9, 1.75)
+row_lean = PackedFloat32Array(14, 5)
+row_width = PackedFloat32Array(1.45, 1.25)
+pointed = 0.8
+cup = 0.95
+curl = 0.22
+bud = false
+inner_shade = 0.1
+
+[resource]
+script = ExtResource("1_tip")
+id = &"tulip"
+display_name = "Tulip"
+description = "A tulip stamp: three tall, cupped, pointed petals wrapped round three more. Drag for a little row of tulips."
+sort_order = 54
+tags = PackedStringArray("floral", "flower", "russian", "tulip")
+profile = SubResource("Profile_tulip")
+behavior = 1
+stamp = SubResource("Stamp_tulip")
+stamp_spacing = 2.4
+ring_spacing = 0.3
+speed_thinning = 0.0
+dwell_growth = 0.3
+size_names = PackedStringArray("Small", "Medium", "Large")
+size_presets = PackedFloat32Array(0.07, 0.095, 0.125)
+min_size = 0.045
+max_size = 0.17

@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="TipDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/piping/tip_definition.gd" id="1_tip"]
+[ext_resource type="Script" path="res://scripts/piping/profiles/round_profile.gd" id="2_profile"]
+
+[sub_resource type="Resource" id="Profile_writing"]
+script = ExtResource("2_profile")
+squash = 1.0
+sides = 12
+
+[resource]
+script = ExtResource("1_tip")
+id = &"writing"
+display_name = "Writing"
+description = "A fine round tip with a steady hand: names, wishes and dainty lacework. Lines stay even however fast you go."
+sort_order = 12
+tags = PackedStringArray("line", "writing", "lettering", "fine")
+profile = SubResource("Profile_writing")
+lift = 0.6
+end_style = 0
+dollop_height = 1.0
+ring_spacing = 0.35
+speed_thinning = 0.0
+dwell_growth = 0.35
+smoothing = 8
+size_names = PackedStringArray("Fine", "Medium", "Bold")
+size_presets = PackedFloat32Array(0.014, 0.02, 0.028)
+min_size = 0.01
+max_size = 0.05

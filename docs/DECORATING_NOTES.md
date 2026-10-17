@@ -9,8 +9,77 @@ to extend it, and what still needs work. Newest milestone first in the log.
 performance), B (turntable, tiers, coat, spatula, interface layout), C
 (lighting, set and look), D (the ten piping tips) and E (decorations).
 
-**Next: milestone F (juice and audio).** Not started. The plan for F to H
-is below.
+**In progress: milestone E2 (more content and shimmer), paused on request.**
+Godot is at `C:\Users\celia\CakeGame\Godot_v4.7.2-stable_win64.exe` (use
+the `_console` one from a terminal).
+
+Done in E2 so far (committed, tested, launches cleanly):
+
+- **Ten new piping tips** (20 in all), see "The piping tips": Writing,
+  French Star, Rosette Swirl (1M), Twisted Rope, Bead Border, Lace Scallop,
+  Russian Flower, Tulip, Chrysanthemum, Triple Line. New classes:
+  `RopeProfile`, `RosetteStamp`, `PetalFlowerStamp` (Russian flower and
+  tulip), `SpikyFlowerStamp`, `ScallopStamp`; tips with several openings
+  (`TipDefinition.openings`) and steadier lines (`smoothing`).
+- **Two-tone bag in the data and builder** (`StrokeData.stripe`): one side
+  of the opening in the second colour; Russian/tulip petals blush toward
+  it, multi-line tips alternate it. Visible in `--scenario=tips --page=2`.
+  *No button for it yet* (see next steps).
+- **Metallic finish ("shine") in the data and shaders**: `StrokeData.shine`,
+  `DecorationData.shine`, `TierData.coat_shine` (all saved in `to_dict`),
+  drawn by `apply_finish` in `art/shaders/shimmer.gdshaderinc`. *Nothing
+  sets it yet* (needs the metallic palette).
+- **Lustre dust foundations**: `ShimmerMask` (a 256x128 picture per tier,
+  wrapped round it; survives resizing; saved as PNG/base64 in
+  `TierData.to_dict`), `TierCommands.PaintShimmer` (undo per brush press),
+  Clear all also clears dust, per-tier materials (`TierMaterials`) and
+  the shader side (`apply_shimmer`: soft sheen plus tiny glinting flakes).
+  *No brush tool yet*, so it cannot be seen in game.
+- **Decoration framework**: mixed-shape decorations (`variants`), a BAND
+  placement for ribbons, `shader_override`, `uses_text()`, builders that
+  remap themselves on resize (`remap_unique`), `BowBuilder` and
+  `RibbonBuilder` (satin, lace, optional bow). `extrude` now handles any
+  simple outline (crescents). *No new decoration .tres files yet*; the
+  Treats and Ribbons tabs are left out of `CATEGORIES` until they have items.
+- Faster stamp tips: pending stamps are reused between frames (flower tips
+  went from ~1.4 ms to ~0.4 ms a frame on a long drag).
+
+**Exact next steps to finish E2** (in this order):
+
+1. Decoration tool: BAND placement (drag round the side; a click wraps all
+   the way; snap to the base), colour mixes (`context.mix`) and shine
+   (`context.shine`) on placed pieces. A `lace.gdshader` (a copy of
+   `decoration.gdshader` that discards holes from UV) for lace trim.
+2. Decoration .tres files and builders, as planned in the brief: fruit
+   (strawberry whole/half, blackberry, citrus and kiwi slices, fig, grapes,
+   pomegranate seeds), fondant (butterfly, moon, cloud, leaf cut-outs with
+   `CutoutBuilder`; letters via a `TextMesh`-based unique builder that
+   bends round the side with `wrap_round`/`side_curve`; bow; plaque;
+   bunny, bee, mushroom figures), flowers (peony and tulip by giving
+   `RoseBuilder` exported rings; sunflower and forget-me-not by extending
+   `DaisyBuilder`; lavender and baby's breath sprigs; leaves), sprinkles
+   (hearts, stars, pearl mix, sanding sugar, two medleys using `variants`),
+   ribbons (satin, satin with bow, lace), treats (macarons, meringue
+   kisses, mini donuts, wafer rolls), chocolate shards, glitter stars,
+   bunting topper. Then put Treats and Ribbons back in `CATEGORIES`.
+3. Palettes: more frosting colours, a metallic palette (gold, rose gold,
+   silver, bronze, copper, champagne, pearl, with a shine per swatch),
+   named colour mixes (`data/palettes/`), and a palette panel with tabs
+   (Colours / Metallic / Mixes), a scrolling grid and a custom picker.
+   `EditorContext.set_color(color, shine)` and `set_mix` are ready.
+4. The dust brush tool (key L): soft round brush that calls
+   `ShimmerMask.dab` on the tier under the cursor, uploads the mask with
+   `TierView.apply_shimmer`, one `PaintShimmer` per press; size, strength
+   (whisper / shimmer / painted) and a brush-off option. Then tune the
+   look on real screenshots and measure it on the heavy cake.
+5. Shelves: a pipe-shelf control for the two-tone bag (`set_two_tone`,
+   `set_color_slot`), proper pages or arrows for the 20 tips instead of
+   the interim scroll bar, tabs for the bigger decoration shelf, tooltips.
+6. Tests (new decorations, dust undo/resize/save, ribbon remap), input
+   test steps (dust brush, ribbon drag), showcase scenarios, benchmark and
+   deco_bench side by side, then this document's content tables.
+
+**After E2: milestone F (juice and audio).** Not started.
 
 **Exact next steps for F:**
 
@@ -75,6 +144,18 @@ is below.
   piece is not allowed.
 - Single-click shapes point along the camera's right at the moment of the
   click, and that direction is saved with the stroke.
+- Lustre dust is one mask per tier, wrapped round it, read by everything
+  near the tier (coat, piping, decorations), so one brush stroke dusts
+  whatever is under it, the dust survives resizing, and it saves as a
+  small PNG. Undo stores only the changed rectangle, before and after.
+- Metallic colours are a per-item `shine` (vertex-colour alpha for piping,
+  so merged strokes keep their own finish; packed into the MultiMesh
+  custom data for decorations; a uniform for the coat).
+- Decoration shaders find a piece's place on its tier through the global
+  shader parameter `cake_from_world` (declared in `project.godot`, set
+  each frame by `CakeView`). Each tier has its own copies of the piping and
+  decoration materials (`TierMaterials`) carrying its dust; same shader,
+  so no extra draw calls.
 
 ## Engine version
 
@@ -148,7 +229,7 @@ Everything is created from code; there are no hand-made models.
 
 ## The piping tips
 
-Ten tips, all data in `data/tips/` (shelf order):
+Twenty tips, all data in `data/tips/` (shelf order is `sort_order`; the E2 tips slot in between):
 
 | Tip | How it works | Drag | Click |
 | --- | --- | --- | --- |
@@ -162,6 +243,16 @@ Ten tips, all data in `data/tips/` (shelf order):
 | Ruffle | `PetalProfile` with `frill`, plus `wave_amplitude` | a frilly border | one petal |
 | Basketweave | `RibbonProfile` (flat band, ribbed top) | ribbons | one bar of the weave |
 | Grass | `GrassStamp` (tufts of tapered strands) | a lawn | one tuft |
+| Writing | `RoundProfile`, tiny sizes, `smoothing` 8 | steady lettering | a small dot |
+| French Star | `StarProfile`, 16 fine ridges | pleated borders | soft star kiss |
+| Rosette Swirl | `RosetteStamp` (1M-style swirl) | a row of rosettes | one rosette |
+| Twisted Rope | `RopeProfile` (3 strands) + `twist_rate` | rope border | twisted kiss |
+| Bead Border | `ShellStamp` on a round profile | a string of beads | one bead |
+| Lace Scallop | `ScallopStamp` (arcs, dots, teardrop) | scalloped lace | one scallop |
+| Russian Flower | `PetalFlowerStamp`, three rows round a bud | a row of flowers | one flower |
+| Tulip | `PetalFlowerStamp`, six tall pointed petals | a row of tulips | one tulip |
+| Chrysanthemum | `SpikyFlowerStamp` | a row of mums | one mum |
+| Triple Line | round profile, `openings` (three lines) | three parallel lines | three dots |
 
 - **Clicks** (`click_length` above 0): a short piece laid along the surface
   the way the bag is held (the camera's right). The direction is stored in
@@ -176,7 +267,8 @@ Ten tips, all data in `data/tips/` (shelf order):
   hidden mini scene once at start-up; the tip cards tint it with the current
   colour. Its multisampling matches the main view (2x): a different setting
   made the GPU build a new pipeline and caused a 60 ms hitch.
-- Sampler of every tip: `--scenario=tips --shots=... --angles=overhead,close`.
+- Sampler of the tips: `--scenario=tips --shots=... --angles=overhead,close` (the first ten; add `--page=2` for the E2 tips, some in a two-tone bag).
+- Round stamps (flowers, rosettes) ignore the drag direction, so a stamp still being piped is reused from the last frame instead of rebuilt (`StrokeBuilder._stamp_geometry`). Stamps that follow the drag (shells, grass, scallops) say so in `follows_direction()`.
 
 ## Adding a new piping tip
 
@@ -355,6 +447,12 @@ a long stroke cost ~39 ms. What changed then:
 
 ## Known issues
 
+- E2 is half done (see the handoff): the two-tone bag, metallic colours
+  and lustre dust work in data and shaders but have no controls yet, and
+  the 20 tip cards scroll sideways (Shift + wheel or the bar) until the
+  shelf gets proper pages.
+- Benchmarks were not re-run for E2 yet (the shaders gained a dust/finish
+  branch that is skipped when unused; measure side by side on mains power).
 - Decorations are not pickable (you cannot pipe on top of a fondant heart;
   the piping lands on the cake underneath).
 - A single decoration can only be removed with undo or Clear all; a "pick
@@ -383,6 +481,12 @@ a long stroke cost ~39 ms. What changed then:
 
 ## Milestone log
 
+- **E2. More content and shimmer (in progress).** Ten new tips (Writing,
+  French Star, Rosette Swirl, Twisted Rope, Bead Border, Lace Scallop,
+  Russian Flower, Tulip, Chrysanthemum, Triple Line), two-tone bag and
+  metallic finish in the data and shaders, lustre-dust mask, command and
+  shaders, decoration framework for mixes, ribbons and text. See the
+  handoff for what is left.
 - **E. Decorations.** Eighteen decorations as data in seven shelf tabs:
   sprinkles, confetti, nonpareils, sugar pearls, gold and silver dragées,
   ganache drip, chocolate curls, fondant heart / star / blossom, daisy,

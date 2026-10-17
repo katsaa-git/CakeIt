@@ -14,6 +14,10 @@ var tip_id: StringName = &"round"
 var size_index: int = 1
 var radius: float = 0.07
 var color: Color = Color(1.0, 0.96, 0.92)
+## Second colour of a two-tone bag (alpha 0 = a plain bag).
+var stripe := Color(0.0, 0.0, 0.0, 0.0)
+## 0 = plain buttercream, 1 = metallic paint (see Finish).
+var shine: float = 0.0
 var rng_seed: int = 0
 var points := PackedVector3Array()
 var normals := PackedVector3Array()
@@ -41,6 +45,8 @@ func duplicate_data() -> StrokeData:
 	copy.size_index = size_index
 	copy.radius = radius
 	copy.color = color
+	copy.stripe = stripe
+	copy.shine = shine
 	copy.rng_seed = rng_seed
 	copy.points = points.duplicate()
 	copy.normals = normals.duplicate()
@@ -72,6 +78,10 @@ func to_dict() -> Dictionary:
 	}
 	if forward != Vector3.ZERO:
 		data["forward"] = SaveMath.pack_vec3(PackedVector3Array([forward]), 0.001)
+	if stripe.a > 0.0:
+		data["stripe"] = stripe.to_html(false)
+	if shine > 0.0:
+		data["shine"] = snappedf(shine, 0.01)
 	return data
 
 
@@ -90,6 +100,9 @@ static func from_dict(data: Dictionary) -> StrokeData:
 	var forward: PackedVector3Array = SaveMath.unpack_vec3(data.get("forward", []))
 	if forward.size() == 1:
 		stroke.forward = forward[0]
+	if data.has("stripe"):
+		stroke.stripe = Color.from_string(String(data["stripe"]), Color.WHITE)
+	stroke.shine = clampf(float(data.get("shine", 0.0)), 0.0, 1.0)
 	# Repair mismatched arrays from a hand-edited or damaged file.
 	var count: int = mini(stroke.points.size(), stroke.normals.size())
 	stroke.points.resize(count)

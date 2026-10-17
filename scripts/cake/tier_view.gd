@@ -13,6 +13,8 @@ var mesh_instance: MeshInstance3D
 var strokes: StrokeBatch
 ## The decorations on this tier.
 var decorations: DecorationLayer
+## Per-tier copies of the piping and decoration materials (for lustre dust).
+var materials: TierMaterials
 ## This tier's frame in the collision tree.
 var collision_frame: Node3D
 
@@ -24,6 +26,7 @@ var _move_tween: Tween
 var _shape_tween: Tween
 var _highlight: float = 0.0
 var _highlight_goal: float = 0.0
+var _dust_base: float = 0.0
 
 
 func setup(id: int, collision_root: Node3D, board: bool = false, board_radius: float = 2.0) -> void:
@@ -36,11 +39,14 @@ func setup(id: int, collision_root: Node3D, board: bool = false, board_radius: f
 
 	if not board:
 		material = Materials.new_tier_material()
+		materials = TierMaterials.new()
+		materials.register(material)
 		material.set_shader_parameter("seed", float(id) * 0.137)
 		mesh_instance = MeshInstance3D.new()
 		mesh_instance.name = "Frosting"
 		add_child(mesh_instance)
 	else:
+		materials = TierMaterials.new(true)
 		_body = _new_body(&"board")
 		var shape := CylinderShape3D.new()
 		shape.radius = board_radius
@@ -51,10 +57,10 @@ func setup(id: int, collision_root: Node3D, board: bool = false, board_radius: f
 		_body.add_child(collision)
 
 	strokes = StrokeBatch.new()
-	strokes.setup(id, Materials.buttercream(), collision_frame)
+	strokes.setup(id, materials.buttercream, collision_frame)
 	add_child(strokes)
 	decorations = DecorationLayer.new()
-	decorations.setup(id, null)
+	decorations.setup(id, null, materials)
 	add_child(decorations)
 
 
@@ -82,6 +88,14 @@ func sync(tier: TierData, base_y: float, animate: bool) -> void:
 			_shape_tween = create_tween()
 			_shape_tween.tween_property(self, "scale", Vector3.ONE, 0.5).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 	apply_coat(tier, false)
+	materials.set_frame(tier.radius, tier.height, base_y)
+	apply_shimmer(tier)
+
+
+## Shows the tier's lustre dust (`rect` is the part of the mask that changed).
+func apply_shimmer(tier: TierData, rect: Rect2i = Rect2i()) -> void:
+	if materials != null:
+		materials.set_dust(tier.shimmer, rect)
 
 
 func _rebuild_shape(tier: TierData) -> void:
@@ -116,9 +130,11 @@ func apply_coat(tier: TierData, animate: bool) -> void:
 			material.set_shader_parameter("prev_color", material.get_shader_parameter("coat_color"))
 			material.set_shader_parameter("prev_coated", material.get_shader_parameter("coated"))
 			material.set_shader_parameter("prev_smoothness", material.get_shader_parameter("smoothness"))
+			material.set_shader_parameter("prev_shine", material.get_shader_parameter("coat_shine"))
 		material.set_shader_parameter("coat_color", tier.coat_color)
 		material.set_shader_parameter("coated", coated_value)
 		material.set_shader_parameter("smoothness", tier.smoothness)
+		material.set_shader_parameter("coat_shine", tier.coat_shine)
 		material.set_shader_parameter("sweep", 0.0)
 		_coat_tween = create_tween()
 		_coat_tween.tween_method(func(v: float) -> void: material.set_shader_parameter("sweep", v), 0.0, 1.0, COAT_SWEEP_SECONDS).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
@@ -128,7 +144,9 @@ func apply_coat(tier: TierData, animate: bool) -> void:
 		material.set_shader_parameter("coated", coated_value)
 		material.set_shader_parameter("prev_coated", coated_value)
 		material.set_shader_parameter("smoothness", tier.smoothness)
+		material.set_shader_parameter("coat_shine", tier.coat_shine)
 		material.set_shader_parameter("prev_smoothness", tier.smoothness)
+		material.set_shader_parameter("prev_shine", tier.coat_shine)
 		material.set_shader_parameter("sweep", 1.0)
 
 
@@ -169,6 +187,10 @@ func play_remove_and_free() -> void:
 func _process(delta: float) -> void:
 	if material == null:
 		return
+	# While the tier glides to a new height on the stack, its dust glides too.
+	if not is_equal_approx(position.y, _dust_base) and _built_radius > 0.0:
+		_dust_base = position.y
+		materials.set_frame(_built_radius, _built_height, position.y)
 	if not is_equal_approx(_highlight, _highlight_goal):
 		_highlight = move_toward(_highlight, _highlight_goal, delta * 4.0)
 		material.set_shader_parameter("highlight", _highlight)

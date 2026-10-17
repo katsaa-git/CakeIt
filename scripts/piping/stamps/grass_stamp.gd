@@ -24,6 +24,11 @@ const RINGS: int = 5
 var _strand: ProfileShape
 
 
+## Tufts lean the way the bag moves.
+func follows_direction() -> bool:
+	return true
+
+
 func emit(out: MeshArrays, context: StampContext) -> void:
 	if _strand == null:
 		_strand = ProfileShape.circle(5)
@@ -40,7 +45,10 @@ func emit(out: MeshArrays, context: StampContext) -> void:
 		var flop: Vector3 = (outward * 0.6 + context.forward * lean - context.normal * 0.8).normalized()
 		var strand_length: float = r * length * rng.randf_range(0.75, 1.15)
 		var shade: float = rng.randf_range(0.0, 0.1)
-		var colors: PackedColorArray = TubeBuilder.shaded_colors(_strand, context.color.darkened(shade), 0.0)
+		# A two-tone bag gives every other strand the second colour.
+		var tone: Color = context.stripe if context.stripe.a > 0.0 and i % 2 == 1 else context.color
+		tone = Color(tone.r, tone.g, tone.b, context.color.a).darkened(shade)
+		var colors: PackedColorArray = TubeBuilder.shaded_colors(_strand, tone, 0.0)
 		var centers := PackedVector3Array()
 		var ups := PackedVector3Array()
 		var scales := PackedFloat32Array()

@@ -109,6 +109,9 @@ func test_single_click_makes_a_dollop() -> void:
 		# Dots and kisses stand up; click pieces (leaf, petal, basketweave bar)
 		# lie along the surface but must still be clearly there.
 		var wanted: float = 0.05 if tip.click_length == 0.0 else 0.02
+		# Several small openings make several small dots.
+		if tip.openings.size() > 1:
+			wanted *= tip.opening_size
 		check(top > wanted, "%s: the click rises off the surface (top %.3f)" % [tip.id, top])
 
 

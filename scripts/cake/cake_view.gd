@@ -42,6 +42,7 @@ func setup(cake_model: CakeModel, new_collision_root: Node3D, plate_radius: floa
 	model.reset.connect(_on_reset)
 	model.tiers_changed.connect(_on_tiers_changed)
 	model.tier_coat_changed.connect(_on_coat_changed)
+	model.tier_shimmer_changed.connect(_on_shimmer_changed)
 	model.stroke_added.connect(_on_stroke_added)
 	model.stroke_removed.connect(_on_stroke_removed)
 	model.decoration_added.connect(_on_decoration_added)
@@ -113,6 +114,9 @@ func _all_views() -> Array[TierView]:
 
 
 func _process(_delta: float) -> void:
+	# Lets the decoration shaders find where each piece sits on its tier
+	# (for lustre dust), however the turntable has turned.
+	RenderingServer.global_shader_parameter_set(&"cake_from_world", Projection(get_parent_node_3d().global_transform.affine_inverse() if get_parent_node_3d() != null else Transform3D.IDENTITY))
 	if _build_queue.is_empty():
 		if _was_building:
 			_was_building = false
@@ -202,6 +206,12 @@ func _on_coat_changed(tier: TierData, animate: bool) -> void:
 	var view: TierView = _views.get(tier.id)
 	if view != null:
 		view.apply_coat(tier, animate)
+
+
+func _on_shimmer_changed(tier: TierData, rect: Rect2i) -> void:
+	var view: TierView = _views.get(tier.id)
+	if view != null:
+		view.apply_shimmer(tier, rect)
 
 
 func _on_stroke_added(stroke: StrokeData) -> void:

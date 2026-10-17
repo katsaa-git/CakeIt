@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="TipDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/piping/tip_definition.gd" id="1_tip"]
+[ext_resource type="Script" path="res://scripts/piping/profiles/rope_profile.gd" id="2_profile"]
+
+[sub_resource type="Resource" id="Profile_rope"]
+script = ExtResource("2_profile")
+strands = 3
+strand_offset = 0.42
+squash = 0.95
+sides = 48
+
+[resource]
+script = ExtResource("1_tip")
+id = &"rope"
+display_name = "Twisted Rope"
+description = "Three strands twisted round each other: a sailor-style rope border for the bottom or the top edge."
+sort_order = 34
+tags = PackedStringArray("border", "rope", "twist")
+profile = SubResource("Profile_rope")
+lift = 0.6
+end_style = 0
+dollop_height = 1.2
+dollop_twist = 2.2
+ring_spacing = 0.22
+speed_thinning = 0.08
+dwell_growth = 0.4
+twist_rate = 0.85
+size_names = PackedStringArray("Small", "Medium", "Large")
+size_presets = PackedFloat32Array(0.045, 0.07, 0.1)
+min_size = 0.03
+max_size = 0.15

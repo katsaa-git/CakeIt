@@ -38,13 +38,13 @@ func _ready() -> void:
 
 
 ## Rebuilds the preview shapes when the tip, size or colour changes.
-func configure(tip: TipDefinition, size: float, color: Color) -> void:
-	var key: String = "%s:%.4f:%s" % [tip.id, size, color.to_html()]
+func configure(tip: TipDefinition, size: float, color: Color, stripe: Color = Color(0.0, 0.0, 0.0, 0.0)) -> void:
+	var key: String = "%s:%.4f:%s:%s" % [tip.id, size, color.to_html(), stripe.to_html()]
 	if key == _key:
 		return
 	_key = key
 	_outline.mesh = _build_outline(tip, size)
-	var builder := StrokeBuilder.new(tip, size, color, 1)
+	var builder := StrokeBuilder.new(tip, size, color, 1, stripe)
 	builder.fallback_forward = Vector3.FORWARD
 	builder.add_sample(Vector3.ZERO, Vector3.UP, 1.0)
 	builder.finish()

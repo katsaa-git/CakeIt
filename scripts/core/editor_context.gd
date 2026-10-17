@@ -14,6 +14,14 @@ signal message(text: String)
 signal tier_selection_changed(tier_id: int)
 signal coat_style_changed(naked: bool)
 signal decoration_size_changed(index: int)
+## A colour mix was picked in the palette (empty = none).
+signal mix_changed(colors: PackedColorArray)
+## The two-tone bag was switched on or off, or its second colour changed.
+signal stripe_changed(on: bool, color: Color)
+## Which colour the palette is setting: 0 the main colour, 1 the stripe.
+signal color_slot_changed(slot: int)
+## The dust brush's size, strength or eraser changed.
+signal dust_changed
 
 var model: CakeModel
 var commands: CommandStack
@@ -39,6 +47,20 @@ var coat_naked: bool = false
 ## Decorations: the chosen size preset (0..2) and the words for topper signs.
 var decoration_size_index: int = 1
 var decoration_text: String = "Happy Birthday!"
+## Finish of the picked colour: 0 plain, 1 metallic (metallic swatches).
+var shine: float = 0.0
+## A colour mix picked for decorations (empty = just the one colour).
+var mix := PackedColorArray()
+var mix_name: String = ""
+## Two-tone piping bag and its second colour.
+var two_tone: bool = false
+var stripe_color: Color = Color(1.0, 0.97, 0.93)
+## 0: the palette sets the main colour; 1: it sets the stripe.
+var color_slot: int = 0
+## Dust brush: size and strength presets (0..2) and whether it brushes off.
+var dust_size_index: int = 1
+var dust_strength_index: int = 1
+var dust_erase: bool = false
 
 
 func set_tool(id: StringName) -> void:
@@ -85,9 +107,51 @@ func adjust_size(factor: float) -> void:
 	size_changed.emit(size, size_index)
 
 
-func set_color(new_color: Color) -> void:
-	color = new_color
+## Picks a colour (and its finish: 1 for metallic swatches). While the
+## two-tone bag's stripe slot is chosen, this sets the stripe instead.
+func set_color(new_color: Color, new_shine: float = 0.0) -> void:
+	if color_slot == 1 and tool_id == &"pipe":
+		stripe_color = Color(new_color, 1.0)
+		stripe_changed.emit(two_tone, stripe_color)
+		return
+	color = Color(new_color, 1.0)
+	shine = clampf(new_shine, 0.0, 1.0)
+	if not mix.is_empty():
+		mix = PackedColorArray()
+		mix_name = ""
+		mix_changed.emit(mix)
 	color_changed.emit(color)
+
+
+## Picks a colour mix for decorations (each piece takes one of its colours).
+func set_mix(colors: PackedColorArray, mix_title: String = "") -> void:
+	mix = colors.duplicate()
+	mix_name = mix_title
+	mix_changed.emit(mix)
+
+
+## The stripe colour as stored with a stroke (alpha 0 when the bag is plain).
+func stripe() -> Color:
+	return stripe_color if two_tone else Color(0.0, 0.0, 0.0, 0.0)
+
+
+func set_two_tone(on: bool) -> void:
+	two_tone = on
+	if not on and color_slot == 1:
+		set_color_slot(0)
+	stripe_changed.emit(two_tone, stripe_color)
+
+
+func set_color_slot(slot: int) -> void:
+	color_slot = clampi(slot, 0, 1)
+	color_slot_changed.emit(color_slot)
+
+
+func set_dust(size_index: int, strength_index: int, erase: bool) -> void:
+	dust_size_index = clampi(size_index, 0, 2)
+	dust_strength_index = clampi(strength_index, 0, 2)
+	dust_erase = erase
+	dust_changed.emit()
 
 
 func set_decoration(definition: Resource) -> void:

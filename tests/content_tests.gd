@@ -11,7 +11,7 @@ func check(condition: bool, message: String) -> void:
 
 func test_all_tips_are_valid() -> void:
 	var tips: Array[TipDefinition] = Content.tips()
-	check(tips.size() == 10, "ten piping tips (found %d)" % tips.size())
+	check(tips.size() == 20, "twenty piping tips (found %d)" % tips.size())
 	var ids: Dictionary = {}
 	var orders: Dictionary = {}
 	for tip in tips:

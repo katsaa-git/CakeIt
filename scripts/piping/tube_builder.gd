@@ -88,6 +88,22 @@ static func shaded_colors(shape: ProfileShape, color: Color, groove_darkening: f
 	return out
 
 
+## Per-vertex colours for a two-tone ("striped") bag: one side of the
+## opening (profile x below 0) is filled with `stripe`, the rest with `color`,
+## so lines get a stripe down one side and twisted shapes swirl. Without a
+## stripe (alpha 0) this is plain `shaded_colors`. Alpha carries the finish
+## (see Finish): 1 for plain buttercream, lower for metallic.
+static func bag_colors(shape: ProfileShape, color: Color, stripe: Color, groove_darkening: float = 0.22) -> PackedColorArray:
+	var out: PackedColorArray = shaded_colors(shape, color, groove_darkening)
+	if stripe.a <= 0.0:
+		return out
+	for j in range(shape.points.size()):
+		if shape.points[j].x < 0.0:
+			var k: float = 1.0 - shape.shade[j] * groove_darkening
+			out[j] = Color(stripe.r * k, stripe.g * k, stripe.b * k, color.a)
+	return out
+
+
 ## Sweeps a whole path at once. `centers`, `ups` and `scales` must be the same
 ## length (at least 2). Tangents and normal tilt are worked out from
 ## neighbouring points. Optional poles close either end.

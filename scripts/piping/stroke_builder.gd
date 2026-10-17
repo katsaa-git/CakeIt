@@ -15,7 +15,8 @@ extends RefCounted
 ## The last raw sample is "open": while the player holds still its pressure
 ## keeps growing (a blob forms). It is frozen when the next sample arrives.
 
-## Half-width of the path smoothing window, in resampled points.
+## Half-width of the path smoothing window, in resampled points (a tip can
+## ask for more with `smoothing`).
 const SMOOTH_HALF: int = 5
 ## Rings per sealed chunk while piping.
 const CHUNK_RINGS: int = 20
@@ -36,9 +37,17 @@ const RING_MAX_GAP: float = 1.1
 var tip: TipDefinition
 var radius: float = 0.07
 var color := Color.WHITE
+## Second colour of a two-tone bag (alpha 0 = a plain bag).
+var stripe := Color(0.0, 0.0, 0.0, 0.0)
+## 0 = plain buttercream, 1 = metallic (see Finish).
+var shine: float = 0.0
 var rng_seed: int = 0
 ## Stamp direction for a single click, when there is no drag to follow.
-var fallback_forward := Vector3.FORWARD
+var fallback_forward := Vector3.FORWARD:
+	set(value):
+		fallback_forward = value
+		for strand in _strands:
+			strand.fallback_forward = value
 
 ## Finished geometry, oldest first. Grows while piping; never rewritten.
 var pieces: Array[MeshArrays] = []
@@ -80,20 +89,44 @@ var _prev_up := Vector3.ZERO
 var _coarse_prev := PackedVector3Array()
 
 var _stamps_done: int = 0
+# Stamp index -> [origin, normal, radius, forward, geometry] for pending stamps.
+var _stamp_cache: Dictionary = {}
+var _smooth_half: int = SMOOTH_HALF
+
+# Tips with several openings (tip.openings): one child builder per line.
+# Samples are held back until the drag direction is known (so every line
+# starts parallel), then each child gets the sample moved sideways by its
+# opening's offset. Children's finished pieces are gathered into `pieces`.
+var _strands: Array[StrokeBuilder] = []
+var _strand_pieces := PackedInt32Array()
+var _strand_faces := PackedInt32Array()
+var _strands_fed: int = 0
+var _direction := Vector3.ZERO
 
 
-func _init(new_tip: TipDefinition, new_radius: float, new_color: Color, new_seed: int = 0) -> void:
+func _init(new_tip: TipDefinition, new_radius: float, new_color: Color, new_seed: int = 0,
+		new_stripe: Color = Color(0.0, 0.0, 0.0, 0.0), new_shine: float = 0.0, is_strand: bool = false) -> void:
 	tip = new_tip
 	radius = new_radius
 	color = new_color
+	stripe = new_stripe
+	shine = new_shine
 	rng_seed = new_seed
 	_shape = tip.shape()
-	_colors = TubeBuilder.shaded_colors(_shape, color)
+	_colors = TubeBuilder.bag_colors(_shape, Finish.tone(color, shine), stripe)
 	_spacing = radius * tip.ring_spacing
 	_to_next = _spacing
-	var sigma: float = float(SMOOTH_HALF) * 0.5
-	for i in range(-SMOOTH_HALF, SMOOTH_HALF + 1):
+	_smooth_half = tip.smoothing if tip.smoothing > 0 else SMOOTH_HALF
+	var sigma: float = float(_smooth_half) * 0.5
+	for i in range(-_smooth_half, _smooth_half + 1):
 		_weights.append(exp(-float(i * i) / (2.0 * sigma * sigma)))
+	if not is_strand and tip.openings.size() > 1 and not is_stamp():
+		for k in range(tip.openings.size()):
+			# A two-tone bag puts the second colour in every other line.
+			var line_color: Color = stripe if stripe.a > 0.0 and k % 2 == 1 else color
+			_strands.append(StrokeBuilder.new(tip, radius * tip.opening_size, Color(line_color, 1.0), new_seed + k, Color(0.0, 0.0, 0.0, 0.0), shine, true))
+			_strand_pieces.append(0)
+			_strand_faces.append(0)
 
 
 ## Builds the finished geometry for saved stroke data.
@@ -106,9 +139,9 @@ static func build_stroke(stroke: StrokeData, stroke_tip: TipDefinition) -> Strok
 
 
 ## An empty builder set up like the one that piped `stroke` (same size,
-## colour, seed and click direction), ready to be fed its samples.
+## colour, finish, seed and click direction), ready to be fed its samples.
 static func for_stroke(stroke: StrokeData, stroke_tip: TipDefinition) -> StrokeBuilder:
-	var builder := StrokeBuilder.new(stroke_tip, stroke.radius, stroke.color, stroke.rng_seed)
+	var builder := StrokeBuilder.new(stroke_tip, stroke.radius, stroke.color, stroke.rng_seed, stroke.stripe, stroke.shine)
 	if stroke.forward != Vector3.ZERO:
 		builder.fallback_forward = stroke.forward
 	return builder
@@ -144,7 +177,9 @@ func add_sample(point: Vector3, normal: Vector3, pressure: float) -> bool:
 	_raw_n.append(normal.normalized())
 	_raw_w.append(pressure)
 	_raw_arc.append(arc)
-	if is_stamp():
+	if not _strands.is_empty():
+		_feed_strands()
+	elif is_stamp():
 		_commit_stamps(false)
 	else:
 		_commit_segments()
@@ -157,6 +192,9 @@ func add_sample(point: Vector3, normal: Vector3, pressure: float) -> bool:
 func set_open_pressure(pressure: float) -> void:
 	if not _raw_w.is_empty():
 		_raw_w[_raw_w.size() - 1] = pressure
+		if _strands_fed == _raw_p.size():
+			for strand in _strands:
+				strand.set_open_pressure(pressure)
 
 
 ## Geometry for everything not yet in `pieces`: the open chunk, the tail near
@@ -164,6 +202,8 @@ func set_open_pressure(pressure: float) -> void:
 func preview() -> MeshArrays:
 	if _raw_p.is_empty():
 		return MeshArrays.new()
+	if not _strands.is_empty():
+		return _strands_preview()
 	var tail: MeshArrays = _pending_stamps() if is_stamp() else _build_tail()
 	if _open.is_empty():
 		return tail
@@ -178,6 +218,9 @@ func finish() -> void:
 		return
 	finished = true
 	if _raw_p.is_empty():
+		return
+	if not _strands.is_empty():
+		_finish_strands()
 		return
 	if is_stamp():
 		_commit_stamps(true)
@@ -206,6 +249,105 @@ func vertex_total() -> int:
 	for piece in pieces:
 		total += piece.vertex_count()
 	return total
+
+
+# --- Several openings ----------------------------------------------------------
+
+## Feeds the line builders every sample whose direction is known.
+func _feed_strands() -> void:
+	if _direction == Vector3.ZERO:
+		# Hold the samples back until the bag has clearly moved one way, so the
+		# lines start side by side instead of fanning out.
+		var moved: Vector3 = last_point() - _raw_p[0]
+		moved -= _raw_n[0] * moved.dot(_raw_n[0])
+		if moved.length() < radius * 0.6:
+			return
+		_direction = moved.normalized()
+	while _strands_fed < _raw_p.size():
+		_feed_one(_strands_fed, _strands, _direction)
+		_strands_fed += 1
+	_gather_strands()
+
+
+## Gives sample `i` to each line, moved sideways (and up) by its opening.
+## The sideways direction comes from the latest sample at least a tip radius
+## back, so hand jitter does not wiggle the lines.
+func _feed_one(i: int, strands: Array[StrokeBuilder], start_direction: Vector3) -> void:
+	var p: Vector3 = _raw_p[i]
+	var n: Vector3 = _raw_n[i]
+	var along: Vector3 = start_direction
+	for j in range(i - 1, -1, -1):
+		if p.distance_to(_raw_p[j]) >= radius:
+			along = p - _raw_p[j]
+			break
+	along -= n * along.dot(n)
+	if along.length_squared() < 1e-12:
+		along = TubeBuilder.any_perpendicular(n)
+	var side: Vector3 = n.cross(along.normalized()).normalized()
+	for k in range(strands.size()):
+		var offset: Vector2 = tip.openings[k] * radius
+		strands[k].add_sample(p + side * offset.x + n * offset.y, n, _raw_w[i])
+
+
+## Moves newly finished line pieces (and their collision) into this stroke.
+func _gather_strands() -> void:
+	for k in range(_strands.size()):
+		var strand: StrokeBuilder = _strands[k]
+		while _strand_pieces[k] < strand.pieces.size():
+			pieces.append(strand.pieces[_strand_pieces[k]])
+			_strand_pieces[k] += 1
+		if _strand_faces[k] < strand.collision_faces.size():
+			collision_faces.append_array(strand.collision_faces.slice(_strand_faces[k]))
+			_strand_faces[k] = strand.collision_faces.size()
+
+
+func _strands_preview() -> MeshArrays:
+	var strands: Array[StrokeBuilder] = _strands
+	if _direction == Vector3.ZERO:
+		# Direction not known yet (a click so far): show the lines the way the
+		# bag is held, in throwaway builders.
+		strands = [] as Array[StrokeBuilder]
+		for k in range(_strands.size()):
+			strands.append(StrokeBuilder.new(tip, _strands[k].radius, _strands[k].color, rng_seed + k, Color(0.0, 0.0, 0.0, 0.0), shine, true))
+		var held: Vector3 = _held_direction()
+		for i in range(_raw_p.size()):
+			_feed_one(i, strands, held)
+	var out := MeshArrays.new()
+	for strand in strands:
+		out.append(strand.preview())
+	return out
+
+
+func _finish_strands() -> void:
+	if _direction == Vector3.ZERO:
+		_direction = _held_direction()
+		while _strands_fed < _raw_p.size():
+			_feed_one(_strands_fed, _strands, _direction)
+			_strands_fed += 1
+	_gather_strands()
+	# Everything the lines add on finishing becomes one last piece, exactly
+	# what the last preview showed.
+	var last := MeshArrays.new()
+	for k in range(_strands.size()):
+		var strand: StrokeBuilder = _strands[k]
+		strand.finish()
+		while _strand_pieces[k] < strand.pieces.size():
+			last.append(strand.pieces[_strand_pieces[k]])
+			_strand_pieces[k] += 1
+		if _strand_faces[k] < strand.collision_faces.size():
+			collision_faces.append_array(strand.collision_faces.slice(_strand_faces[k]))
+			_strand_faces[k] = strand.collision_faces.size()
+	if not last.is_empty():
+		pieces.append(last)
+
+
+## The way the bag is held, flat on the surface at the first sample.
+func _held_direction() -> Vector3:
+	var n: Vector3 = _raw_n[0]
+	var d: Vector3 = fallback_forward - n * fallback_forward.dot(n)
+	if d.length_squared() < 1e-10:
+		d = TubeBuilder.any_perpendicular(n)
+	return d.normalized()
 
 
 # --- Resampling and smoothing ---------------------------------------------------
@@ -238,7 +380,7 @@ func _resample_segment(i: int, to_next: float, out_p: PackedVector3Array, out_n:
 
 
 func _commit_smoothed() -> void:
-	while _sp.size() + SMOOTH_HALF < _rp.size():
+	while _sp.size() + _smooth_half < _rp.size():
 		var k: int = _sp.size()
 		_smooth_into(k, _rp, _rn, _rw, 0, false, _sp, _sn, _sw)
 		_sa.append(0.0 if k == 0 else _sa[k - 1] + _sp[k].distance_to(_sp[k - 1]))
@@ -254,9 +396,9 @@ func _smooth_into(k: int, p: PackedVector3Array, n: PackedVector3Array, w: Packe
 	var sum_n := Vector3.ZERO
 	var sum_w: float = 0.0
 	var total: float = 0.0
-	for i in range(-SMOOTH_HALF, SMOOTH_HALF + 1):
+	for i in range(-_smooth_half, _smooth_half + 1):
 		var g: int = k + i
-		var weight: float = _weights[i + SMOOTH_HALF]
+		var weight: float = _weights[i + _smooth_half]
 		var local: int = g - base
 		var pp: Vector3
 		if g < 0:
@@ -536,7 +678,7 @@ func _build_tail() -> MeshArrays:
 		return tail
 
 	# 1. Resampled path including the open segment and the cursor itself.
-	var base: int = maxi(_rp.size() - (2 * SMOOTH_HALF + 2), 0)
+	var base: int = maxi(_rp.size() - (2 * _smooth_half + 2), 0)
 	var p: PackedVector3Array = _rp.slice(base)
 	var n: PackedVector3Array = _rn.slice(base)
 	var w: PackedFloat32Array = _rw.slice(base)
@@ -613,6 +755,7 @@ func _commit_stamps(final: bool) -> void:
 		# Picking only needs a rough shape: a low dome per stamp, not every
 		# blade of grass.
 		tip.stamp.add_collision(collision_faces, context)
+		_stamp_cache.erase(_stamps_done)
 		_stamps_done += 1
 		if _open.vertex_count() >= STAMP_CHUNK_VERTS:
 			pieces.append(_open)
@@ -640,24 +783,42 @@ func _emit_stamp(out: MeshArrays, index: int, s: float) -> StampContext:
 	context.origin = sample[0]
 	context.normal = sample[1]
 	context.radius = radius * float(sample[2])
-	context.color = color
+	context.color = Finish.tone(color, shine)
+	context.stripe = stripe
+	context.spacing = spacing
 	context.shape = _shape
 	context.tip = tip
 	context.rng = RandomNumberGenerator.new()
 	context.rng.seed = hash(Vector2i(rng_seed, index))
-	var ahead: Vector3 = _raw_at(minf(s + spacing * 0.5, raw_length()))[0]
-	var behind: Vector3 = _raw_at(maxf(s - spacing * 0.5, 0.0))[0]
-	# A click (no real drag) points the way the bag was held instead of
-	# following hand jitter.
-	var forward: Vector3 = ahead - behind if raw_length() >= spacing * 0.5 else Vector3.ZERO
-	forward -= context.normal * forward.dot(context.normal)
-	if forward.length_squared() < 1e-10:
-		forward = fallback_forward - context.normal * fallback_forward.dot(context.normal)
+	var forward := Vector3.ZERO
+	if tip.stamp.follows_direction():
+		var ahead: Vector3 = _raw_at(minf(s + spacing * 0.5, raw_length()))[0]
+		var behind: Vector3 = _raw_at(maxf(s - spacing * 0.5, 0.0))[0]
+		# A click (no real drag) points the way the bag was held instead of
+		# following hand jitter.
+		forward = ahead - behind if raw_length() >= spacing * 0.5 else Vector3.ZERO
+		forward -= context.normal * forward.dot(context.normal)
+		if forward.length_squared() < 1e-10:
+			forward = fallback_forward - context.normal * fallback_forward.dot(context.normal)
+	# Round stamps (flowers) do not care which way the bag moves, so their
+	# frame stays put while the drag goes on and their geometry can be reused.
 	if forward.length_squared() < 1e-10:
 		forward = TubeBuilder.any_perpendicular(context.normal)
 	context.forward = forward.normalized()
-	tip.stamp.emit(out, context)
+	out.append(_stamp_geometry(index, context))
 	return context
+
+
+## One stamp's geometry, reused from the last frame when nothing about it
+## changed (pending stamps are shown every frame while piping).
+func _stamp_geometry(index: int, context: StampContext) -> MeshArrays:
+	var cached: Array = _stamp_cache.get(index, [])
+	if not cached.is_empty() and cached[0] == context.origin and cached[1] == context.normal and cached[2] == context.radius and cached[3] == context.forward:
+		return cached[4]
+	var mesh := MeshArrays.new()
+	tip.stamp.emit(mesh, context)
+	_stamp_cache[index] = [context.origin, context.normal, context.radius, context.forward, mesh]
+	return mesh
 
 
 ## Position, normal and pressure at arc length `s` along the raw path.

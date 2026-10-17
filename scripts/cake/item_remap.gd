@@ -34,6 +34,13 @@ static func remap_stroke(stroke: StrokeData, old_tier: TierData, new_tier: TierD
 
 
 static func remap_decoration(decoration: DecorationData, old_tier: TierData, new_tier: TierData) -> DecorationData:
+	# Some pieces know best how to move themselves (a ribbon keeps hugging the
+	# base or the middle of the side).
+	var definition := Content.decoration(decoration.def_id) as DecorationDefinition
+	if definition != null and definition.builder != null:
+		var moved: DecorationData = definition.builder.remap_unique(decoration, old_tier, new_tier)
+		if moved != null:
+			return moved
 	var copy: DecorationData = decoration.duplicate_data()
 	# Path decorations (drips) are stored as rim angles, so they adapt by themselves.
 	if copy.path.is_empty():

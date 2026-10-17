@@ -745,17 +745,27 @@ func _set_sweep(context: EditorContext) -> void:
 			print("SET   without %-24s GPU %.2f ms  (saves %.2f)  draw calls %d" % [part[0], r["gpu_ms"], base["gpu_ms"] - r["gpu_ms"], r["draw_calls"]])
 
 
-## Every tip on one cake: a line and a click of each on the top (two columns
-## of five, in shelf order), and classic borders around the side.
+## The original ten tips (page 1 of the tip sampler); page 2 shows the rest.
+const FIRST_TIPS: Array[StringName] = [&"round", &"open_star", &"closed_star", &"shell", &"drop_flower", &"leaf", &"petal", &"ruffle", &"basketweave", &"grass"]
+
+
+## Ten tips on one cake: a line and a click of each on the top (two columns
+## of five, in shelf order), and borders around the side. `--page=2` shows
+## the E2 tips, with a two-tone bag on a few of them.
 func _build_tip_sampler(context: EditorContext) -> void:
 	var model: CakeModel = context.model
+	var page: int = int(args.get("page", "1"))
 	var tier: TierData = model.tiers[0]
 	context.commands.run(TierCommands.ResizeTier.new(model, tier.id, 1.6, 1.05))
 	tier = model.tiers[0]
 	context.commands.run(TierCommands.CoatTier.new(model, tier.id, Color(0.99, 0.95, 0.88), true, 0.9, false))
 	var colors: Array[Color] = [Color(0.97, 0.72, 0.78), Color(0.72, 0.86, 0.78), Color(0.99, 0.84, 0.62), Color(0.74, 0.8, 0.95), Color(0.85, 0.74, 0.93)]
-	var tips: Array[TipDefinition] = Content.tips()
-	for i in range(tips.size()):
+	var tips: Array[TipDefinition] = []
+	for tip in Content.tips():
+		if (tip.id in FIRST_TIPS) == (page == 1):
+			tips.append(tip)
+	var two_tone: Array[StringName] = [&"russian_flower", &"triple_line", &"rosette"]
+	for i in range(mini(tips.size(), 10)):
 		var tip: TipDefinition = tips[i]
 		var column: float = -1.0 if i < 5 else 1.0
 		var row: float = float(i % 5)
@@ -770,6 +780,8 @@ func _build_tip_sampler(context: EditorContext) -> void:
 		stroke.radius = tip.preset_size(1)
 		stroke.color = colors[i % colors.size()]
 		stroke.rng_seed = stroke.id * 7919
+		if tip.id in two_tone:
+			stroke.stripe = Color(1.0, 0.97, 0.93)
 		var steps: int = 60
 		for k in range(steps + 1):
 			var t: float = float(k) / float(steps)
@@ -786,16 +798,25 @@ func _build_tip_sampler(context: EditorContext) -> void:
 		click.radius = tip.preset_size(1)
 		click.color = stroke.color
 		click.rng_seed = click.id * 7919
+		click.stripe = stroke.stripe
 		# Clicks sit in the middle, pointing out toward their line.
 		click.forward = Vector3(column, 0.0, 0.0)
 		click.add_sample(Vector3(column * 0.16, tier.height, z), Vector3.UP, 1.2)
 		_add(context, click)
-	# Around the side: a shell border at the bottom, ruffles, a row of drop
-	# flowers, and a closed-star rope at the top edge.
-	_add(context, DemoCake.side_ring(model, tier, 0.07, &"shell", 1, Color(1.0, 0.97, 0.92), 0.0, 0, 1.0))
-	_add(context, DemoCake.side_ring(model, tier, 0.42, &"ruffle", 1, Color(0.97, 0.72, 0.78), 0.0, 0, 1.0))
-	_add(context, DemoCake.side_ring(model, tier, 0.78, &"drop_flower", 1, Color(0.74, 0.8, 0.95), 0.0, 0, 1.0))
-	_add(context, DemoCake.top_ring(model, tier, tier.radius - 0.06, &"closed_star", 0, Color(1.0, 0.97, 0.92), 1.03))
+	if page == 1:
+		# Around the side: a shell border at the bottom, ruffles, a row of drop
+		# flowers, and a closed-star rope at the top edge.
+		_add(context, DemoCake.side_ring(model, tier, 0.07, &"shell", 1, Color(1.0, 0.97, 0.92), 0.0, 0, 1.0))
+		_add(context, DemoCake.side_ring(model, tier, 0.42, &"ruffle", 1, Color(0.97, 0.72, 0.78), 0.0, 0, 1.0))
+		_add(context, DemoCake.side_ring(model, tier, 0.78, &"drop_flower", 1, Color(0.74, 0.8, 0.95), 0.0, 0, 1.0))
+		_add(context, DemoCake.top_ring(model, tier, tier.radius - 0.06, &"closed_star", 0, Color(1.0, 0.97, 0.92), 1.03))
+	else:
+		# A bead border at the bottom, lace scallops hanging from the top, a
+		# row of chrysanthemums and a twisted rope round the top edge.
+		_add(context, DemoCake.side_ring(model, tier, 0.06, &"bead", 1, Color(1.0, 0.97, 0.92), 0.0, 0, 1.0))
+		_add(context, DemoCake.side_ring(model, tier, 0.4, &"chrysanthemum", 0, Color(0.99, 0.84, 0.62), 0.0, 0, 1.0))
+		_add(context, DemoCake.side_ring(model, tier, 0.86, &"lace_scallop", 1, Color(1.0, 0.97, 0.93), 0.0, 0, 1.0))
+		_add(context, DemoCake.top_ring(model, tier, tier.radius - 0.07, &"rope", 0, Color(0.74, 0.8, 0.95), 1.03))
 
 
 ## A two-tier cake wearing every kind of decoration: a chocolate drip, candles

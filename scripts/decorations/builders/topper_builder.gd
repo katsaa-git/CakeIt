@@ -15,6 +15,10 @@ extends DecorationBuilder
 const THICKNESS: float = 0.02
 
 
+func uses_text() -> bool:
+	return true
+
+
 func is_unique() -> bool:
 	return true
 

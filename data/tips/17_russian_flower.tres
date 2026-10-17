@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="TipDefinition" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/piping/tip_definition.gd" id="1_tip"]
+[ext_resource type="Script" path="res://scripts/piping/profiles/round_profile.gd" id="2_profile"]
+[ext_resource type="Script" path="res://scripts/piping/stamps/petal_flower_stamp.gd" id="3_stamp"]
+
+[sub_resource type="Resource" id="Profile_russian"]
+script = ExtResource("2_profile")
+squash = 1.0
+sides = 24
+
+[sub_resource type="Resource" id="Stamp_russian"]
+script = ExtResource("3_stamp")
+row_petals = PackedInt32Array(8, 7, 5)
+row_radius = PackedFloat32Array(0.72, 0.45, 0.2)
+row_height = PackedFloat32Array(0.95, 1.1, 1.1)
+row_lean = PackedFloat32Array(52, 28, 8)
+row_width = PackedFloat32Array(1.25, 1.05, 0.85)
+pointed = 0.0
+cup = 0.6
+curl = 0.12
+bud = true
+bud_size = 0.4
+inner_shade = 0.12
+
+[resource]
+script = ExtResource("1_tip")
+id = &"russian_flower"
+display_name = "Russian Flower"
+description = "A Russian-style tip: one squeeze, one whole flower with rows of cupped petals round a little bud. Lovely with a two-tone bag."
+sort_order = 52
+tags = PackedStringArray("floral", "flower", "russian")
+profile = SubResource("Profile_russian")
+behavior = 1
+stamp = SubResource("Stamp_russian")
+stamp_spacing = 3.7
+ring_spacing = 0.3
+speed_thinning = 0.0
+dwell_growth = 0.3
+size_names = PackedStringArray("Small", "Medium", "Large")
+size_presets = PackedFloat32Array(0.08, 0.11, 0.145)
+min_size = 0.05
+max_size = 0.2

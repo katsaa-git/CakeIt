@@ -16,6 +16,10 @@ var coat_color: Color = Color(1.0, 0.96, 0.89)
 var coated: bool = true
 ## 0 = rustic spatula marks, 1 = glass smooth.
 var smoothness: float = 0.45
+## Finish of the coat: 0 = buttercream, 1 = metallic paint (see Finish).
+var coat_shine: float = 0.0
+## Lustre dust brushed onto this tier (and everything on it), or null.
+var shimmer: ShimmerMask
 
 
 func duplicate_data() -> TierData:
@@ -27,11 +31,24 @@ func duplicate_data() -> TierData:
 	copy.coat_color = coat_color
 	copy.coated = coated
 	copy.smoothness = smoothness
+	copy.coat_shine = coat_shine
+	copy.shimmer = shimmer.duplicate_mask() if shimmer != null else null
 	return copy
 
 
+## The dust mask, made empty on first use.
+func ensure_shimmer() -> ShimmerMask:
+	if shimmer == null:
+		shimmer = ShimmerMask.new()
+	return shimmer
+
+
+func has_shimmer() -> bool:
+	return shimmer != null and not shimmer.is_empty()
+
+
 func to_dict() -> Dictionary:
-	return {
+	var data := {
 		"id": id,
 		"shape": String(shape_id),
 		"radius": snappedf(radius, 0.0001),
@@ -40,6 +57,11 @@ func to_dict() -> Dictionary:
 		"coated": coated,
 		"smoothness": snappedf(smoothness, 0.001),
 	}
+	if coat_shine > 0.0:
+		data["coat_shine"] = snappedf(coat_shine, 0.01)
+	if has_shimmer():
+		data["shimmer"] = shimmer.to_base64()
+	return data
 
 
 static func from_dict(data: Dictionary) -> TierData:
@@ -51,4 +73,7 @@ static func from_dict(data: Dictionary) -> TierData:
 	tier.coat_color = Color.from_string(String(data.get("coat_color", "fff5e3")), Color(1.0, 0.96, 0.89))
 	tier.coated = bool(data.get("coated", true))
 	tier.smoothness = float(data.get("smoothness", 0.45))
+	tier.coat_shine = clampf(float(data.get("coat_shine", 0.0)), 0.0, 1.0)
+	if data.has("shimmer"):
+		tier.shimmer = ShimmerMask.from_base64(String(data["shimmer"]))
 	return tier

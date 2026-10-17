@@ -15,6 +15,8 @@ extends RefCounted
 
 signal tiers_changed
 signal tier_coat_changed(tier: TierData, animate: bool)
+## A tier's lustre dust changed (in `rect` of its mask; empty = all of it).
+signal tier_shimmer_changed(tier: TierData, rect: Rect2i)
 signal stroke_added(stroke: StrokeData)
 signal stroke_removed(stroke: StrokeData)
 signal decoration_added(decoration: DecorationData)
@@ -99,14 +101,28 @@ func replace_tier(tier: TierData) -> void:
 	tiers_changed.emit()
 
 
-func set_coat(tier_id: int, color: Color, coated: bool, smoothness: float, animate: bool) -> void:
+func set_coat(tier_id: int, color: Color, coated: bool, smoothness: float, animate: bool, shine: float = 0.0) -> void:
 	var tier: TierData = tier_by_id(tier_id)
 	if tier == null:
 		return
 	tier.coat_color = color
 	tier.coated = coated
 	tier.smoothness = smoothness
+	tier.coat_shine = shine
 	tier_coat_changed.emit(tier, animate)
+
+
+## Puts a piece of a tier's dust mask back (`part` covers `rect`), or
+## replaces the whole mask when `rect` is empty (`whole` may be null).
+func set_shimmer(tier_id: int, rect: Rect2i, part: Image, whole: ShimmerMask = null) -> void:
+	var tier: TierData = tier_by_id(tier_id)
+	if tier == null:
+		return
+	if rect.has_area():
+		tier.ensure_shimmer().put_region(rect, part)
+	else:
+		tier.shimmer = whole.duplicate_mask() if whole != null else null
+	tier_shimmer_changed.emit(tier, rect)
 
 
 # --- Strokes and decorations ------------------------------------------------

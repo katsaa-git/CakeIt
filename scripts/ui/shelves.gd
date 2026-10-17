@@ -54,7 +54,14 @@ class PipeShelf extends HBoxContainer:
 		add_theme_constant_override("separation", 14)
 		var tips_box := HBoxContainer.new()
 		tips_box.add_theme_constant_override("separation", 2)
-		add_child(tips_box)
+		# Twenty tips do not fit in one row: they scroll sideways (Shift + wheel
+		# or the scroll bar). Pages or tabs come with the shelf polish.
+		var strip := ScrollContainer.new()
+		strip.custom_minimum_size = Vector2(1000.0, 118.0)
+		strip.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		strip.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+		strip.add_child(tips_box)
+		add_child(strip)
 		var group := ButtonGroup.new()
 		for tip in Content.tips():
 			var card := TipCard.make(tip, "\nTab: next tip")
@@ -345,4 +352,4 @@ class DecorationShelf extends HBoxContainer:
 				_hint.text = "Click to place." + (" Goes on top of a tier." if definition.top_only else "")
 		if not definition.uses_palette():
 			_hint.text += " Comes in its own colours."
-		_words.visible = definition.builder is TopperBuilder
+		_words.visible = definition.uses_text()

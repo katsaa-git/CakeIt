@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="TipDefinition" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/piping/tip_definition.gd" id="1_tip"]
+[ext_resource type="Script" path="res://scripts/piping/profiles/round_profile.gd" id="2_profile"]
+[ext_resource type="Script" path="res://scripts/piping/stamps/spiky_flower_stamp.gd" id="3_stamp"]
+
+[sub_resource type="Resource" id="Profile_mum"]
+script = ExtResource("2_profile")
+squash = 1.0
+sides = 16
+
+[sub_resource type="Resource" id="Stamp_mum"]
+script = ExtResource("3_stamp")
+rows = 4
+petals = 20
+length = 1.6
+petal_width = 0.5
+droop = 0.22
+outer_angle = 22.0
+inner_angle = 78.0
+
+[resource]
+script = ExtResource("1_tip")
+id = &"chrysanthemum"
+display_name = "Chrysanthemum"
+description = "Rows of slim, spiky petals spray out from the middle in one squeeze: mums, dahlias and starbursts."
+sort_order = 56
+tags = PackedStringArray("floral", "flower", "spiky")
+profile = SubResource("Profile_mum")
+behavior = 1
+stamp = SubResource("Stamp_mum")
+stamp_spacing = 3.7
+ring_spacing = 0.3
+speed_thinning = 0.0
+dwell_growth = 0.3
+size_names = PackedStringArray("Small", "Medium", "Large")
+size_presets = PackedFloat32Array(0.065, 0.09, 0.12)
+min_size = 0.04
+max_size = 0.17

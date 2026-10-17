@@ -35,15 +35,34 @@ func is_unique() -> bool:
 	return false
 
 
+## Override: true when the player types words for it (signs, plaques, letters).
+func uses_text() -> bool:
+	return false
+
+
 ## Override for unique builders: the finished geometry for one placed piece,
-## in the tier's frame, with its colour already baked in.
+## with its colour already baked in, in the frame `piece_transform` gives.
 func build_unique(_decoration: DecorationData, _tier: TierData) -> MeshArrays:
 	return MeshArrays.new()
 
 
-## Override for unique builders: extra nodes (a sign's words) for one piece.
+## Override for unique builders whose geometry is built in the tier's own
+## frame (drips, ribbons): where the built piece sits on its tier.
+func piece_transform(decoration: DecorationData) -> Transform3D:
+	return decoration.transform
+
+
+## Override for unique builders: extra nodes (a sign's words) for one piece,
+## in the piece's own frame.
 func add_extras(_node: Node3D, _decoration: DecorationData) -> void:
 	pass
+
+
+## Override for builders that keep their own placement data (ribbons): the
+## piece moved onto a resized tier. The default (null) lets ItemRemap move
+## it along the surface like any other piece.
+func remap_unique(_decoration: DecorationData, _old_tier: TierData, _new_tier: TierData) -> DecorationData:
+	return null
 
 
 # --- Helpers for builders ------------------------------------------------------
@@ -67,6 +86,32 @@ static func add_sphere(out: MeshArrays, center: Vector3, radius_value: float, co
 			# Rings run top to bottom, so this order faces outward.
 			out.add_triangle(a, c, b)
 			out.add_triangle(b, c, d)
+
+
+## A squashed sphere turned and placed by `xform` (ears, wings, leaves).
+static func add_blob(out: MeshArrays, xform: Transform3D, radius_value: float, color: Color, squash := Vector3.ONE, rings: int = 7, segments: int = 12) -> void:
+	var piece := MeshArrays.new()
+	add_sphere(piece, Vector3.ZERO, radius_value, color, rings, segments, squash)
+	add_transformed(out, piece, xform)
+
+
+## A round shape spun from a (radius, height) outline, bottom to top, placed
+## by `xform`.
+static func add_lathe(out: MeshArrays, outline: PackedVector2Array, color: Color, segments: int = 24, xform := Transform3D.IDENTITY) -> void:
+	var profile: Dictionary = LatheMesh.smooth_profile(outline)
+	var piece: MeshArrays = LatheMesh.build_arrays(profile["points"], profile["normals"], segments, Callable(), 0, color)
+	add_transformed(out, piece, xform)
+
+
+## A round tube along `points` with radius `radii` (one per point), closed
+## at both ends: stems, wicks, antennae.
+static func add_tube(out: MeshArrays, points: PackedVector3Array, radii: PackedFloat32Array, color: Color, sides: int = 8) -> void:
+	var shape := ProfileShape.circle(sides)
+	var ups := PackedVector3Array()
+	for i in range(points.size()):
+		var along: Vector3 = points[mini(i + 1, points.size() - 1)] - points[maxi(i - 1, 0)]
+		ups.append(TubeBuilder.any_perpendicular(along.normalized() if along.length_squared() > 1e-12 else Vector3.UP))
+	TubeBuilder.sweep(out, shape, TubeBuilder.shaded_colors(shape, color, 0.0), points, ups, radii, PackedFloat32Array(), true, true)
 
 
 ## Recomputes smooth normals from the faces (for hand-built shapes).
@@ -114,18 +159,35 @@ static func add_transformed(out: MeshArrays, source: MeshArrays, xform: Transfor
 
 
 ## A flat shape with soft edges: `outline` is a closed loop of (x, top)
-## points around the origin, laid in the XZ plane (top = +Z) and raised
-## `thickness` along +Y, with a slightly rounded top edge. `bottom` adds the
-## underside too (for shapes seen from behind).
+## points laid in the XZ plane (top = +Z) and raised `thickness` along +Y,
+## with a rounded top edge. Any simple outline works (crescent moons too):
+## the edge is inset along its normals and the top is triangulated.
+## `bottom` adds the underside too (for shapes seen from behind).
 static func extrude(outline: PackedVector2Array, thickness: float, color: Color, bottom: bool = false) -> MeshArrays:
 	var out := MeshArrays.new()
-	var rings: Array = [[0.0, 1.0], [0.6, 1.0], [0.88, 0.975], [1.0, 0.93]]
-	if bottom:
-		rings = [[0.0, 0.93], [0.12, 0.975], [0.4, 1.0], [0.6, 1.0], [0.88, 0.975], [1.0, 0.93]]
 	var count: int = outline.size()
+	var area: float = 0.0
+	for k in range(count):
+		var a: Vector2 = outline[k]
+		var b: Vector2 = outline[(k + 1) % count]
+		area += a.x * b.y - b.x * a.y
+	var turn: float = 1.0 if area > 0.0 else -1.0
+	# Inward direction at each outline point (across both of its edges).
+	var inward := PackedVector2Array()
+	inward.resize(count)
+	for k in range(count):
+		var prev: Vector2 = outline[(k - 1 + count) % count]
+		var next: Vector2 = outline[(k + 1) % count]
+		var t: Vector2 = (next - prev).normalized()
+		inward[k] = Vector2(-t.y, t.x) * turn
+	var bevel: float = thickness * 0.38
+	# [height fraction, inset as a fraction of the bevel]
+	var rings: Array = [[0.0, 0.0], [0.6, 0.0], [0.88, 0.3], [1.0, 1.0]]
+	if bottom:
+		rings = [[0.0, 1.0], [0.12, 0.3], [0.4, 0.0], [0.6, 0.0], [0.88, 0.3], [1.0, 1.0]]
 	for ring: Array in rings:
 		for k in range(count + 1):
-			var p: Vector2 = outline[k % count] * float(ring[1])
+			var p: Vector2 = outline[k % count] + inward[k % count] * bevel * float(ring[1])
 			out.add_vertex(Vector3(p.x, float(ring[0]) * thickness, p.y), Vector3.UP, color, Vector2(float(k) / float(count), float(ring[0])))
 	for i in range(rings.size() - 1):
 		for k in range(count):
@@ -133,21 +195,64 @@ static func extrude(outline: PackedVector2Array, thickness: float, color: Color,
 			var b: int = a + 1
 			var c: int = a + count + 1
 			var d: int = c + 1
-			out.add_triangle(a, b, c)
-			out.add_triangle(b, d, c)
-	var top_ring: int = (rings.size() - 1) * (count + 1)
-	var top: int = out.vertex_count()
-	out.add_vertex(Vector3(0.0, thickness, 0.0), Vector3.UP, color, Vector2(0.5, 1.0))
+			if turn > 0.0:
+				out.add_triangle(a, b, c)
+				out.add_triangle(b, d, c)
+			else:
+				out.add_triangle(a, c, b)
+				out.add_triangle(b, c, d)
+	smooth_normals(out)
+	# The flat top (and bottom) get their own vertices so they stay flat.
+	var face := PackedVector2Array()
 	for k in range(count):
-		out.add_triangle(top, top_ring + k, top_ring + k + 1)
+		face.append(outline[k] + inward[k] * bevel)
+	var triangles: PackedInt32Array = Geometry2D.triangulate_polygon(face)
+	var top: int = out.vertex_count()
+	for k in range(count):
+		out.add_vertex(Vector3(face[k].x, thickness, face[k].y), Vector3.UP, color, Vector2(float(k) / float(count), 1.0))
+	for i in range(0, triangles.size(), 3):
+		_add_face(out, top + triangles[i], top + triangles[i + 1], top + triangles[i + 2], Vector3.UP)
 	if bottom:
 		var under: int = out.vertex_count()
-		out.add_vertex(Vector3.ZERO, Vector3.DOWN, color, Vector2(0.5, 0.0))
 		for k in range(count):
-			out.add_triangle(under, k + 1, k)
-	smooth_normals(out)
-	# The flat faces stay flat.
-	out.normals[top] = Vector3.UP
-	if bottom:
-		out.normals[out.vertex_count() - 1] = Vector3.DOWN
+			out.add_vertex(Vector3(face[k].x, 0.0, face[k].y), Vector3.DOWN, color, Vector2(float(k) / float(count), 0.0))
+		for i in range(0, triangles.size(), 3):
+			_add_face(out, under + triangles[i], under + triangles[i + 1], under + triangles[i + 2], Vector3.DOWN)
 	return out
+
+
+## Adds a triangle wound so it faces `facing`.
+static func _add_face(out: MeshArrays, a: int, b: int, c: int, facing: Vector3) -> void:
+	var normal: Vector3 = (out.verts[c] - out.verts[a]).cross(out.verts[b] - out.verts[a])
+	if normal.dot(facing) >= 0.0:
+		out.add_triangle(a, b, c)
+	else:
+		out.add_triangle(a, c, b)
+
+
+## Bends a flat piece (lying in its XZ plane, +Y out of the surface) round a
+## cylinder of `cylinder_radius` about its local Z axis, so wide pieces on
+## the side of a tier (words, plaques) hug the curve instead of floating.
+static func wrap_round(piece: MeshArrays, cylinder_radius: float) -> void:
+	if cylinder_radius <= 0.0:
+		return
+	for i in range(piece.verts.size()):
+		var v: Vector3 = piece.verts[i]
+		var angle: float = v.x / cylinder_radius
+		var r: float = cylinder_radius + v.y
+		piece.verts[i] = Vector3(sin(angle) * r, cos(angle) * r - cylinder_radius, v.z)
+		var n: Vector3 = piece.normals[i]
+		piece.normals[i] = Vector3(n.x * cos(angle) + n.y * sin(angle), -n.x * sin(angle) + n.y * cos(angle), n.z).normalized()
+
+
+## The radius (in the piece's own units) to bend a flat piece by when it
+## sits on the side of a tier with its top pointing up; 0 on top, where
+## nothing needs bending.
+static func side_curve(decoration: DecorationData, tier: TierData) -> float:
+	if tier == null:
+		return 0.0
+	var basis: Basis = decoration.transform.basis.orthonormalized()
+	if absf(basis.y.y) > 0.5 or absf(basis.z.y) < 0.6:
+		return 0.0
+	var scale: float = maxf(decoration.transform.basis.get_scale().x, 0.001)
+	return tier.radius / scale

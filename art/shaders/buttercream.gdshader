@@ -5,6 +5,8 @@ shader_type spatial;
 // the frosting never looks like smooth plastic.
 render_mode diffuse_burley, specular_schlick_ggx;
 
+#include "res://art/shaders/shimmer.gdshaderinc"
+
 uniform float roughness : hint_range(0.0, 1.0) = 0.44;
 uniform float specular_amount : hint_range(0.0, 1.0) = 0.42;
 uniform float sss : hint_range(0.0, 1.0) = 0.18;
@@ -60,10 +62,23 @@ void fragment() {
 		NORMAL = bumped / bumped_length;
 	}
 
-	ALBEDO = base * (0.97 + 0.06 * h);
-	ROUGHNESS = roughness - 0.06 * fine;
-	SPECULAR = specular_amount;
-	SSS_STRENGTH = sss;
+	vec3 albedo = base * (0.97 + 0.06 * h);
+	float rough = roughness - 0.06 * fine;
+	float metal = 0.0;
+	float spec = specular_amount;
+	// Vertex alpha carries the finish: 1 plain, lower for metallic paint.
+	float shine = 1.0 - clamp(COLOR.a, 0.0, 1.0);
+	apply_finish(shine, NORMAL, VIEW, albedo, rough, metal, spec);
+	// Strokes live in their tier's frame, so the object position is the
+	// tier-local position the dust mask needs.
+	vec3 normal = NORMAL;
+	apply_shimmer(obj_pos, mat3(VIEW_MATRIX) * mat3(MODEL_MATRIX), albedo, rough, metal, spec, normal);
+	NORMAL = normal;
+	ALBEDO = albedo;
+	ROUGHNESS = rough;
+	METALLIC = metal;
+	SPECULAR = spec;
+	SSS_STRENGTH = sss * (1.0 - metal);
 	RIM = sheen;
 	RIM_TINT = 0.7;
 }
