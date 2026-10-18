@@ -50,6 +50,8 @@ func _run() -> void:
 	match scenario:
 		"showcase":
 			_build_showcase(context)
+		"weave":
+			_build_weave(context)
 		"tips":
 			_build_tip_sampler(context)
 		"decorations":
@@ -745,6 +747,57 @@ func _set_sweep(context: EditorContext) -> void:
 			print("SET   without %-24s GPU %.2f ms  (saves %.2f)  draw calls %d" % [part[0], r["gpu_ms"], base["gpu_ms"] - r["gpu_ms"], r["draw_calls"]])
 
 
+## A basket cake: the whole side woven with the serrated basketweave tip
+## (upright stripes, then short bars across them, alternating), with a rope
+## border at the top edge. `--tip=basketweave` weaves with the plain tip.
+func _build_weave(context: EditorContext) -> void:
+	var model: CakeModel = context.model
+	var tier: TierData = model.tiers[0]
+	context.commands.run(TierCommands.CoatTier.new(model, tier.id, Color(0.86, 0.68, 0.48), true, 0.9, false))
+	var tip_id := StringName(args.get("tip", "basketweave_comb"))
+	var tip: TipDefinition = Content.tip(tip_id)
+	var color := Color(0.88, 0.7, 0.5)
+	var radius: float = tip.preset_size(1)
+	var bar: float = tip.click_length * radius
+	var columns: int = int(TAU * tier.radius / (bar * 0.6))
+	var row_height: float = radius * 2.0
+	var rows: int = int((tier.height - 0.04) / row_height)
+	for c in range(columns):
+		var a: float = TAU * (float(c) + 0.5) / float(columns)
+		var normal := Vector3(cos(a), 0.0, sin(a))
+		var stripe := StrokeData.new()
+		stripe.id = model.new_id()
+		stripe.tier_id = tier.id
+		stripe.tip_id = tip_id
+		stripe.radius = radius
+		stripe.color = color
+		stripe.rng_seed = stripe.id
+		var y: float = 0.03
+		while y <= tier.height - 0.03:
+			stripe.add_sample(normal * tier.radius + Vector3(0.0, y, 0.0), normal, 1.0)
+			y += radius * 0.2
+		_add(context, stripe)
+	for c in range(columns):
+		for row in range(rows):
+			if (row + c) % 2 != 0:
+				continue
+			# Bars sit between two stripes, covering the one behind.
+			var a: float = TAU * float(c) / float(columns)
+			var normal := Vector3(cos(a), 0.0, sin(a))
+			var piece := StrokeData.new()
+			piece.id = model.new_id()
+			piece.tier_id = tier.id
+			piece.tip_id = tip_id
+			piece.radius = radius
+			piece.color = color
+			piece.rng_seed = piece.id
+			piece.forward = Vector3(-sin(a), 0.0, cos(a))
+			# A click piece starts at the click and runs on along `forward`.
+			piece.add_sample(normal * (tier.radius + radius * 0.3) - piece.forward * bar * 0.35 + Vector3(0.0, 0.04 + (float(row) + 0.5) * row_height, 0.0), normal, 1.0)
+			_add(context, piece)
+	_add(context, DemoCake.top_ring(model, tier, tier.radius - 0.05, &"rope", 1, Color(0.8, 0.6, 0.4), 1.03))
+
+
 ## The original ten tips (page 1 of the tip sampler); page 2 shows the rest.
 const FIRST_TIPS: Array[StringName] = [&"round", &"open_star", &"closed_star", &"shell", &"drop_flower", &"leaf", &"petal", &"ruffle", &"basketweave", &"grass"]
 
@@ -765,11 +818,12 @@ func _build_tip_sampler(context: EditorContext) -> void:
 		if (tip.id in FIRST_TIPS) == (page == 1):
 			tips.append(tip)
 	var two_tone: Array[StringName] = [&"russian_flower", &"triple_line", &"rosette"]
-	for i in range(mini(tips.size(), 10)):
+	var per_column: int = ceili(float(tips.size()) / 2.0)
+	for i in range(tips.size()):
 		var tip: TipDefinition = tips[i]
-		var column: float = -1.0 if i < 5 else 1.0
-		var row: float = float(i % 5)
-		var z: float = -0.92 + row * 0.46
+		var column: float = -1.0 if i < per_column else 1.0
+		var row: float = float(i % per_column)
+		var z: float = -0.92 + row * 1.84 / float(maxi(per_column - 1, 1))
 		var x0: float = column * 0.42
 		var x1: float = column * 1.0
 		var stroke := StrokeData.new()

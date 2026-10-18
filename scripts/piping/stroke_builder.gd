@@ -641,7 +641,9 @@ func _emit_click_piece(out: MeshArrays) -> void:
 			# Fat at the base, then drawn out to a point.
 			s = pow(sin(minf(t / 0.3, 1.0) * PI * 0.5), 0.6) if t < 0.3 else pow(1.0 - (t - 0.3) / 0.7, 0.9)
 		else:
-			s = pow(sin(t * PI), 0.35)
+			# Rounded off over `click_ends` of the length at each end.
+			var edge: float = minf(t, 1.0 - t) / maxf(tip.click_ends, 0.01)
+			s = pow(sin(minf(edge, 1.0) * PI * 0.5), 0.35)
 		s = maxf(s, 0.02)
 		centers.append(origin + forward * (t - 0.15) * length + normal * scale * tip.lift * s)
 		ups.append(normal)

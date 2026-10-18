@@ -51,6 +51,9 @@ enum EndStyle {
 ## a click with a leaf tip makes a leaf, with a petal tip a petal, and with
 ## the basketweave tip one bar of the weave.
 @export_range(0.0, 6.0) var click_length: float = 0.0
+## How much of a click piece's length is spent rounding off its ends: 0.5
+## gives soft, lens-like pieces; small values give square-ended bars.
+@export_range(0.05, 0.5) var click_ends: float = 0.5
 
 @export_group("Feel")
 ## Distance between mesh rings, in tip radii. Smaller is smoother but heavier.

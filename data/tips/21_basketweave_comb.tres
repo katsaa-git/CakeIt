@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="TipDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/piping/tip_definition.gd" id="1_tip"]
+[ext_resource type="Script" path="res://scripts/piping/profiles/comb_profile.gd" id="2_profile"]
+
+[sub_resource type="Resource" id="Profile_comb"]
+script = ExtResource("2_profile")
+teeth = 9
+thickness = 0.3
+tooth_depth = 0.09
+crest = 0.3
+sides = 54
+
+[resource]
+script = ExtResource("1_tip")
+id = &"basketweave_comb"
+display_name = "Serrated Weave"
+description = "A true basketweave tip: one smooth side, one toothed like a comb. Pipe a long upright stripe, then short bars across it, and repeat for a woven basket with crisp ridges."
+sort_order = 91
+tags = PackedStringArray("basketweave", "ribbon", "texture", "serrated")
+profile = SubResource("Profile_comb")
+lift = 0.12
+end_style = 0
+click_length = 3.6
+click_ends = 0.1
+ring_spacing = 0.3
+speed_thinning = 0.04
+dwell_growth = 0.2
+size_names = PackedStringArray("Small", "Medium", "Large")
+size_presets = PackedFloat32Array(0.055, 0.08, 0.105)
+min_size = 0.035
+max_size = 0.14
