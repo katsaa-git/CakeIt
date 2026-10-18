@@ -16,6 +16,7 @@ const TOOL_BUTTONS: Array = [
 	[&"coat", "Frosting coat", "C"],
 	[&"spatula", "Smoothing scraper", "F"],
 	[&"decorate", "Decorations", "V"],
+	[&"dust", "Lustre dust", "L"],
 	[&"tiers", "Tiers", "T"],
 ]
 
@@ -172,6 +173,10 @@ func _build_shelf() -> void:
 	var coat := Shelves.CoatShelf.new()
 	coat.setup(context)
 	_shelves[&"coat"] = coat
+	if tools.tools.has(&"dust"):
+		var dust := Shelves.DustShelf.new()
+		dust.setup(context)
+		_shelves[&"dust"] = dust
 	var spatula := Shelves.SpatulaShelf.new()
 	spatula.setup(context)
 	_shelves[&"spatula"] = spatula
@@ -187,7 +192,7 @@ func _build_shelf() -> void:
 func _build_palette() -> void:
 	_palette = PalettePanel.new()
 	_palette.add_theme_stylebox_override("panel", UiTheme.panel_style(26, 10.0))
-	_palette.setup(context, Content.palette(&"frosting") as SwatchPalette)
+	_palette.setup(context)
 	_palette.anchor_left = 1.0
 	_palette.anchor_right = 1.0
 	_palette.anchor_top = 0.5
@@ -316,7 +321,7 @@ func _build_help() -> void:
 		["Middle-drag", "Look higher or lower"],
 		["Turntable ring, stand rim, Space + drag", "Spin the cake (flick it to let it coast)"],
 		["A / D  ·  R", "Spin smoothly  ·  auto-spin"],
-		["B  C  F  V  T", "Piping, coat, scraper, decorations, tiers"],
+		["B  C  F  V  L  T", "Piping, coat, scraper, decorations, lustre dust, tiers"],
 		["1 2 3  ·  [ ]  ·  Ctrl + wheel", "Size presets  ·  fine-tune size"],
 		["Tab", "Next tip"],
 		["Ctrl+Z  ·  Ctrl+Y", "Undo  ·  redo"],
@@ -385,7 +390,7 @@ func _on_tool_changed(tool_id: StringName) -> void:
 	for id: StringName in _shelves:
 		(_shelves[id] as Control).visible = id == tool_id
 	_shelf_panel.visible = _shelves.has(tool_id)
-	_palette.visible = tool_id in [&"pipe", &"coat", &"decorate"]
+	_palette.visible = tool_id in [&"pipe", &"coat", &"decorate", &"dust"]
 	# Collapse to zero size at the anchor; the panel then grows up and out to
 	# exactly fit the new shelf (its minimum size).
 	_shelf_panel.offset_left = 0.0

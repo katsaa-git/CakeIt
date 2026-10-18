@@ -52,6 +52,8 @@ func _run() -> void:
 			_build_showcase(context)
 		"gallery":
 			_build_gallery(context)
+		"shimmer":
+			_build_shimmer(context)
 		"weave":
 			_build_weave(context)
 		"tips":
@@ -810,6 +812,78 @@ func _build_gallery(context: EditorContext) -> void:
 			tool.place_one(def, tier.id, n * tier.radius + Vector3(0.0, tier.height * (0.5 if def.uses_text() else 0.3), 0.0), n)
 	context.set_color(Color(1.0, 0.97, 0.92))
 	print("GALLERY %s: %d decorations" % [tab, defs.size()])
+
+
+## Lustre dust and metallic colours: a two-tier cake with piping and sugar
+## flowers, gold dust brushed in a band across the front of the bottom tier
+## (over coat, piping and pearls alike), pearl dust over the top tier, gold
+## painted roses, gold leaf stars and a metallic piped scroll.
+func _build_shimmer(context: EditorContext) -> void:
+	var model: CakeModel = context.model
+	var deco: DecorationTool = (main.get("tools") as ToolController).tools[&"decorate"]
+	var dust: DustTool = (main.get("tools") as ToolController).tools[&"dust"]
+	var gold := Color(1.0, 0.8, 0.42)
+	var pearl := Color(0.97, 0.95, 0.92)
+	var bottom: TierData = model.tiers[0]
+	context.commands.run(TierCommands.CoatTier.new(model, bottom.id, Color(0.98, 0.86, 0.87), true, 0.9, false))
+	main.call("add_tier")
+	var top: TierData = model.tiers[1]
+	context.commands.run(TierCommands.CoatTier.new(model, top.id, Color(1.0, 0.97, 0.93), true, 0.9, false))
+	_add(context, DemoCake.side_ring(model, bottom, 0.06, &"shell", 1, Color(1.0, 0.97, 0.93), 0.0, 0, 1.0))
+	_add(context, DemoCake.top_ring(model, bottom, bottom.radius - 0.07, &"rope", 0, Color(1.0, 0.97, 0.93), 1.03))
+	_add(context, DemoCake.side_ring(model, top, 0.06, &"bead", 0, Color(0.98, 0.86, 0.87), 0.0, 0, 1.0))
+	_add_all(context, DemoCake.swags(model, bottom, 9, 0.22, 0.2, &"round", 0, Color(1.0, 0.97, 0.93)))
+	var front: float = _front_angle(context)
+	# A metallic gold scroll piped across the top tier's front.
+	var scroll := DemoCake.side_ring(model, top, top.height * 0.55, &"round", 0, gold, 0.06, 7, 1.0)
+	scroll.shine = 1.0
+	_add(context, scroll)
+	# Gold leaf stars and pearls on the bottom tier's side.
+	context.set_color(gold, 1.0)
+	for i in range(5):
+		var a: float = front - 0.8 + float(i) * 0.4
+		var n := Vector3(cos(a), 0.0, sin(a))
+		deco.place_one(Content.decoration(&"fondant_star"), bottom.id, n * bottom.radius + Vector3(0.0, bottom.height * 0.42, 0.0), n)
+	context.set_color(Color(1.0, 0.99, 0.96))
+	for i in range(18):
+		var a: float = front - 1.1 + float(i) * 0.13
+		var n := Vector3(cos(a), 0.0, sin(a))
+		deco.place_one(Content.decoration(&"sugar_pearls"), bottom.id, n * bottom.radius + Vector3(0.0, bottom.height * 0.7, 0.0), n)
+	# Roses on the ledge, then painted gold with dust.
+	var ledge: float = (bottom.radius + top.radius) * 0.5
+	context.set_color(Color(1.0, 0.97, 0.93))
+	for i in range(7):
+		var a: float = front - 0.9 + float(i) * 0.3
+		deco.place_one(Content.decoration(&"rose"), bottom.id, Vector3(cos(a) * ledge, bottom.height, sin(a) * ledge), Vector3.UP)
+	# Shimmer: a band of gold dust across the bottom tier's front...
+	context.set_color(gold, 1.0)
+	context.set_dust(2, 1, false)
+	var band := PackedVector3Array()
+	# Three even passes back and forth, like brushing by hand.
+	for pass_index in range(3):
+		for k in range(60):
+			var t: float = float(k) / 59.0 if pass_index % 2 == 0 else 1.0 - float(k) / 59.0
+			var a: float = front - 0.9 + t * 1.8
+			band.append(Vector3(cos(a) * bottom.radius, bottom.height * (0.36 + 0.14 * float(pass_index)), sin(a) * bottom.radius))
+	dust.brush_path(bottom.id, band, 0.08)
+	# ...rich gold paint over the roses on the ledge...
+	context.set_dust(1, 2, false)
+	var roses := PackedVector3Array()
+	for k in range(40):
+		var a: float = front - 1.0 + float(k) / 39.0 * 2.0
+		roses.append(Vector3(cos(a) * ledge, bottom.height + 0.08, sin(a) * ledge))
+	dust.brush_path(bottom.id, roses, 0.3)
+	# ...and a whisper of pearl dust over the whole top tier.
+	context.set_color(pearl, 0.5)
+	context.set_dust(2, 0, false)
+	var veil := PackedVector3Array()
+	for k in range(120):
+		var t: float = float(k) / 119.0
+		var a: float = t * TAU * 1.5
+		var r: float = top.radius * (0.2 + 0.75 * fmod(t * 3.0, 1.0))
+		veil.append(Vector3(cos(a) * r, top.height, sin(a) * r))
+	dust.brush_path(top.id, veil, 0.2)
+	context.set_color(Color(1.0, 0.97, 0.92))
 
 
 ## A basket cake: the whole side woven with the serrated basketweave tip

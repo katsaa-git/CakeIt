@@ -8,8 +8,10 @@ var selected: bool = false:
 	set(value):
 		selected = value
 		queue_redraw()
-## Optional second colour, drawn as the other half (e.g. sprinkle mixes).
+## A colour mix, drawn as pie slices (empty = one colour).
 var colors: PackedColorArray = PackedColorArray()
+## The colour's finish (metallic swatches shine; pearl ones shimmer).
+var shine: float = 0.0
 
 var _hover: float = 0.0
 var _hover_goal: float = 0.0
@@ -78,5 +80,11 @@ func _draw() -> void:
 			draw_colored_polygon(points, colors[i])
 	else:
 		draw_circle(center, radius, color)
+	if shine > 0.0:
+		# A metal sheen: darker toward the bottom, a bright band across the top.
+		for k in range(6):
+			var f: float = float(k) / 5.0
+			draw_circle(center + Vector2(0.0, radius * 0.45 * f), radius * (1.0 - 0.55 * f), Color(color.darkened(0.25 * shine), 0.18))
+		draw_arc(center + Vector2(-radius * 0.08, -radius * 0.06), radius * 0.62, PI * 1.08, PI * 1.62, 16, Color(1.0, 1.0, 1.0, 0.55 * shine + 0.15), radius * 0.22, true)
 	draw_arc(center, radius, 0.0, TAU, 40, Color(0.3, 0.2, 0.15, 0.18), 1.0, true)
 	draw_circle(center + Vector2(-radius * 0.32, -radius * 0.34), radius * 0.22, Color(1.0, 1.0, 1.0, 0.35))

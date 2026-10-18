@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="SwatchPalette" format=3]
+
+[ext_resource type="Script" path="res://scripts/core/swatch_palette.gd" id="1_palette"]
+
+[resource]
+script = ExtResource("1_palette")
+sort_order = 2
+id = &"metallic"
+display_name = "Metallic"
+colors = PackedColorArray(1, 0.8, 0.42, 1, 0.95, 0.68, 0.6, 1, 0.9, 0.91, 0.93, 1, 0.72, 0.5, 0.3, 1, 0.86, 0.5, 0.33, 1, 0.96, 0.88, 0.72, 1, 0.97, 0.95, 0.92, 1, 0.98, 0.86, 0.88, 1, 0.86, 0.8, 0.95, 1, 0.82, 0.94, 0.88, 1)
+names = PackedStringArray("Gold", "Rose gold", "Silver", "Bronze", "Copper", "Champagne", "Pearl", "Pink pearl", "Lilac pearl", "Mint pearl")
+shines = PackedFloat32Array(1, 1, 1, 1, 1, 0.85, 0.5, 0.5, 0.5, 0.5)

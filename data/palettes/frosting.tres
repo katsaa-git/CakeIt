@@ -1,10 +1,11 @@
-[gd_resource type="Resource" script_class="SwatchPalette" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="SwatchPalette" format=3]
 
 [ext_resource type="Script" path="res://scripts/core/swatch_palette.gd" id="1_palette"]
 
 [resource]
 script = ExtResource("1_palette")
+sort_order = 1
 id = &"frosting"
-display_name = "Buttercream"
-colors = PackedColorArray(1, 0.973, 0.925, 1, 0.996, 0.925, 0.8, 1, 0.976, 0.808, 0.835, 1, 0.937, 0.62, 0.69, 1, 0.988, 0.8, 0.682, 1, 0.988, 0.906, 0.635, 1, 0.82, 0.894, 0.722, 1, 0.725, 0.886, 0.82, 1, 0.682, 0.847, 0.863, 1, 0.71, 0.808, 0.925, 1, 0.82, 0.769, 0.918, 1, 0.851, 0.4, 0.447, 1, 0.776, 0.553, 0.369, 1, 0.42, 0.275, 0.208, 1)
-names = PackedStringArray("Vanilla", "Cream", "Blush", "Rose", "Peach", "Butter", "Pistachio", "Mint", "Sea glass", "Sky", "Lavender", "Berry", "Caramel", "Chocolate")
+display_name = "Colours"
+colors = PackedColorArray(1, 0.973, 0.925, 1, 0.996, 0.925, 0.8, 1, 0.976, 0.808, 0.835, 1, 0.937, 0.62, 0.69, 1, 0.988, 0.8, 0.682, 1, 0.988, 0.906, 0.635, 1, 0.82, 0.894, 0.722, 1, 0.725, 0.886, 0.82, 1, 0.682, 0.847, 0.863, 1, 0.71, 0.808, 0.925, 1, 0.82, 0.769, 0.918, 1, 0.851, 0.4, 0.447, 1, 0.776, 0.553, 0.369, 1, 0.42, 0.275, 0.208, 1, 1, 0.89, 0.91, 1, 0.9, 0.85, 0.96, 1, 0.82, 0.89, 0.97, 1, 1, 0.96, 0.74, 1, 0.99, 0.86, 0.74, 1, 0.76, 0.81, 0.69, 1, 1, 1, 1, 1, 0.99, 0.97, 0.9, 1, 0.91, 0.85, 0.75, 1, 0.73, 0.65, 0.59, 1, 0.56, 0.41, 0.33, 1, 0.72, 0.72, 0.74, 1, 0.28, 0.27, 0.29, 1, 0.66, 0.1, 0.2, 1, 0.12, 0.48, 0.34, 1, 0.16, 0.3, 0.62, 1, 0.45, 0.25, 0.6, 1, 0.1, 0.47, 0.5, 1, 0.95, 0.66, 0.16, 1, 0.92, 0.5, 0.18, 1, 0.6, 0.12, 0.2, 1, 0.18, 0.36, 0.26, 1, 0.42, 0.18, 0.32, 1, 0.98, 0.52, 0.46, 1, 0.78, 0.12, 0.16, 1, 0.13, 0.16, 0.31, 1)
+names = PackedStringArray("Vanilla", "Cream", "Blush", "Rose", "Peach", "Butter", "Pistachio", "Mint", "Sea glass", "Sky", "Lavender", "Berry", "Caramel", "Chocolate", "Baby pink", "Lilac", "Powder blue", "Lemon", "Apricot", "Sage", "Snow white", "Ivory", "Oat", "Taupe", "Mocha", "Dove grey", "Charcoal", "Ruby", "Emerald", "Sapphire", "Amethyst", "Teal", "Marigold", "Pumpkin", "Cranberry", "Pine", "Plum", "Coral", "Holly red", "Midnight")

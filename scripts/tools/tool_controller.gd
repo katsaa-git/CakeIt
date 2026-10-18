@@ -9,7 +9,7 @@ extends Node
 ##   A / D (hold)       spin the turntable    R            auto-spin on/off
 ##   1 2 3              size presets          [ ]          fine-tune size
 ##   Tab / Shift+Tab    next / previous tip   Ctrl+Z, Ctrl+Y  undo, redo
-##   B C F V T          pipe, coat, scraper, decorate, tiers
+##   B C F V L T        pipe, coat, scraper, decorate, lustre dust, tiers
 ##   H  P               help, photo
 
 signal undo_performed(command: CakeCommand)
@@ -18,7 +18,7 @@ signal spin_toggled(enabled: bool)
 signal help_requested
 signal photo_requested
 
-const TOOL_KEYS: Dictionary = {KEY_B: &"pipe", KEY_C: &"coat", KEY_F: &"spatula", KEY_V: &"decorate", KEY_T: &"tiers"}
+const TOOL_KEYS: Dictionary = {KEY_B: &"pipe", KEY_C: &"coat", KEY_F: &"spatula", KEY_V: &"decorate", KEY_L: &"dust", KEY_T: &"tiers"}
 
 var context: EditorContext
 var tools: Dictionary = {}
@@ -255,7 +255,10 @@ func _handle_key(key: InputEventKey) -> void:
 		KEY_1, KEY_2, KEY_3:
 			if key.echo:
 				return
-			context.set_size_index(key.keycode - KEY_1)
+			if context.tool_id == &"dust":
+				context.set_dust(key.keycode - KEY_1, context.dust_strength_index, context.dust_erase)
+			else:
+				context.set_size_index(key.keycode - KEY_1)
 		KEY_BRACKETLEFT:
 			context.adjust_size(1.0 / 1.08)
 		KEY_BRACKETRIGHT:
@@ -272,7 +275,7 @@ func _handle_key(key: InputEventKey) -> void:
 		KEY_P:
 			if not key.echo and not ctrl:
 				photo_requested.emit()
-		KEY_B, KEY_C, KEY_F, KEY_V, KEY_T:
+		KEY_B, KEY_C, KEY_F, KEY_V, KEY_L, KEY_T:
 			if key.echo or ctrl:
 				return
 			if tools.has(TOOL_KEYS[key.keycode]):

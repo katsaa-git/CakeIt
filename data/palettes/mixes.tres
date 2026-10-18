@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="SwatchPalette" format=3]
+
+[ext_resource type="Script" path="res://scripts/core/swatch_palette.gd" id="1_palette"]
+
+[resource]
+script = ExtResource("1_palette")
+sort_order = 3
+id = &"mixes"
+display_name = "Mixes"
+colors = PackedColorArray(0.96, 0.52, 0.64, 1, 0.99, 0.72, 0.4, 1, 0.99, 0.88, 0.4, 1, 0.56, 0.84, 0.62, 1, 0.52, 0.76, 0.95, 1, 0.76, 0.62, 0.94, 1, 0.8, 0.12, 0.16, 1, 0.18, 0.5, 0.3, 1, 1, 0.98, 0.95, 1, 0.95, 0.78, 0.38, 1, 0.96, 0.52, 0.12, 1, 0.14, 0.12, 0.14, 1, 0.52, 0.26, 0.66, 1, 0.62, 0.84, 0.2, 1, 0.98, 0.8, 0.86, 1, 0.8, 0.9, 0.98, 1, 0.86, 0.95, 0.8, 1, 0.99, 0.94, 0.7, 1, 0.9, 0.82, 0.97, 1, 0.82, 0.1, 0.22, 1, 0.97, 0.6, 0.72, 1, 1, 1, 1, 1, 0.99, 0.84, 0.86, 1, 0.72, 0.32, 0.16, 1, 0.88, 0.66, 0.22, 1, 0.48, 0.3, 0.18, 1, 0.98, 0.93, 0.82, 1, 0.12, 0.2, 0.42, 1, 0.12, 0.5, 0.56, 1, 0.56, 0.84, 0.88, 1, 1, 1, 1, 1, 0.98, 0.78, 0.88, 1, 0.84, 0.76, 0.98, 1, 0.74, 0.95, 0.86, 1, 0.72, 0.86, 0.99, 1, 0.98, 0.84, 0.5, 1, 1, 1, 1, 1, 0.99, 0.96, 0.88, 1, 0.95, 0.88, 0.72, 1)
+names = PackedStringArray("Rainbow", "Christmas", "Halloween", "Easter", "Valentine", "Autumn", "Seaside", "Unicorn", "Wedding")
+mix_sizes = PackedInt32Array(6, 4, 4, 5, 4, 4, 4, 5, 3)
+tools = PackedStringArray("decorate")

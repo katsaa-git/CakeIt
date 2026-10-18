@@ -73,6 +73,16 @@ static func tier_presets() -> Array[Resource]:
 	return _tier_presets
 
 
+## Every colour palette, in colour-panel tab order.
+static func palettes() -> Array[Resource]:
+	palette(&"")
+	var out: Array[Resource] = []
+	for res: Resource in _palettes.values():
+		out.append(res)
+	out.sort_custom(func(a: Resource, b: Resource) -> bool: return a.get("sort_order") < b.get("sort_order"))
+	return out
+
+
 static func palette(id: StringName) -> Resource:
 	if _palettes.is_empty():
 		for res in _load_all(PALETTES_DIR):

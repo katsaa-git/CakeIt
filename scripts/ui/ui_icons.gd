@@ -46,6 +46,17 @@ static func draw(ci: CanvasItem, id: StringName, rect: Rect2, color: Color, acce
 				ci.draw_line(c - d, c + d, bit[3], s * 0.09, true)
 			ci.draw_circle(pt(o, s, 0.55, 0.42), s * 0.05, color)
 			ci.draw_circle(pt(o, s, 0.18, 0.52), s * 0.04, color)
+		&"dust":
+			# A soft round brush with a little cloud of sparkle.
+			ci.draw_line(pt(o, s, 0.78, 0.12), pt(o, s, 0.5, 0.5), color, w * 1.3, true)
+			var ferrule := PackedVector2Array([pt(o, s, 0.47, 0.44), pt(o, s, 0.56, 0.53), pt(o, s, 0.5, 0.6), pt(o, s, 0.41, 0.51)])
+			ci.draw_colored_polygon(ferrule, color)
+			ci.draw_circle(pt(o, s, 0.38, 0.64), s * 0.14, Color(accent, 0.45))
+			ci.draw_arc(pt(o, s, 0.38, 0.64), s * 0.14, 0.0, TAU, 20, color, w, true)
+			for spark: Vector2 in [Vector2(0.16, 0.78), Vector2(0.26, 0.9), Vector2(0.12, 0.6), Vector2(0.62, 0.84)]:
+				var c: Vector2 = pt(o, s, spark.x, spark.y)
+				ci.draw_line(c - Vector2(s * 0.045, 0.0), c + Vector2(s * 0.045, 0.0), accent, w * 0.8, true)
+				ci.draw_line(c - Vector2(0.0, s * 0.045), c + Vector2(0.0, s * 0.045), accent, w * 0.8, true)
 		&"tiers":
 			_cake(ci, o, s, 0.12, 0.88, 0.58, 0.9, color, w, Color(accent, 0.3))
 			_cake(ci, o, s, 0.27, 0.73, 0.3, 0.58, color, w, Color(accent, 0.45))

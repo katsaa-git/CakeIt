@@ -72,16 +72,16 @@ void apply_shimmer(vec3 local, mat3 view_from_cake, inout vec3 albedo, inout flo
 	}
 	vec3 dust_color = dust.rgb / amount;
 	float cover = smoothstep(0.0, 0.85, amount);
-	albedo = mix(albedo, dust_color, cover * 0.5);
-	metal = mix(metal, 0.85, cover * 0.55);
+	albedo = mix(albedo, dust_color, cover * 0.55);
+	metal = mix(metal, 0.9, cover * 0.6);
 	rough = mix(rough, 0.3, cover * 0.65);
 	spec = mix(spec, 0.7, cover);
-	const float CELLS = 210.0;
+	const float CELLS = 300.0;
 	vec3 cell = floor(local * CELLS);
 	vec4 h = shimmer_hash(cell);
 	float pixel = length(fwidth(local)) * CELLS;
 	float visible = 1.0 - smoothstep(0.7, 1.6, pixel);
-	if (h.x < cover * 0.45 * visible) {
+	if (h.x < cover * 0.32 * visible) {
 		vec3 tilt = normalize(shimmer_hash(cell + 17.0).xyz * 2.0 - 1.0);
 		normal = normalize(normal + view_from_cake * tilt * 0.7);
 		albedo = mix(albedo, dust_color, 0.85);

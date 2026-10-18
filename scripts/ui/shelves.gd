@@ -166,6 +166,56 @@ class SpatulaShelf extends HBoxContainer:
 		add_child(Shelves.hint("Hold the scraper against a tier and let the cake spin under it\n(A / D, the turntable ring, or drag along the side) to smooth the coat."))
 
 
+## Lustre dust: brush size, how rich the shimmer gets, and brushing it off.
+class DustShelf extends HBoxContainer:
+	var context: EditorContext
+	var _sizes: Array[Button] = []
+	var _strengths: Array[Button] = []
+	var _erase: Button
+
+	func setup(new_context: EditorContext) -> void:
+		context = new_context
+		add_theme_constant_override("separation", 14)
+		var size_box := Shelves.section("Brush")
+		add_child(size_box)
+		var size_row := HBoxContainer.new()
+		size_row.add_theme_constant_override("separation", 4)
+		size_box.add_child(size_row)
+		var size_group := ButtonGroup.new()
+		for i in range(3):
+			var button := Shelves.pill(DustTool.SIZE_NAMES[i], "Brush %d cm across  (%d)" % [roundi(DustTool.SIZES[i] * 20.0), i + 1], size_group)
+			button.pressed.connect(func() -> void: context.set_dust(i, context.dust_strength_index, context.dust_erase))
+			size_row.add_child(button)
+			_sizes.append(button)
+		add_child(Shelves.divider())
+		var strength_box := Shelves.section("Shimmer")
+		add_child(strength_box)
+		var strength_row := HBoxContainer.new()
+		strength_row.add_theme_constant_override("separation", 4)
+		strength_box.add_child(strength_row)
+		var strength_group := ButtonGroup.new()
+		var hints: Array[String] = ["A faint pearly glow", "A soft, sparkling sheen (like real lustre dust)", "Brushed on thick, like gold paint"]
+		for i in range(3):
+			var button := Shelves.pill(DustTool.STRENGTH_NAMES[i], hints[i], strength_group)
+			button.pressed.connect(func() -> void: context.set_dust(context.dust_size_index, i, false))
+			strength_row.add_child(button)
+			_strengths.append(button)
+		_erase = Shelves.pill("Brush off", "Brush dust away again", strength_group)
+		_erase.pressed.connect(func() -> void: context.set_dust(context.dust_size_index, context.dust_strength_index, true))
+		strength_row.add_child(_erase)
+		add_child(Shelves.divider())
+		add_child(Shelves.hint("Pick a colour (Metallic works best), then brush over\nthe cake: the longer you brush, the more it shimmers."))
+		context.dust_changed.connect(_refresh)
+		_refresh()
+
+	func _refresh() -> void:
+		for i in range(_sizes.size()):
+			_sizes[i].button_pressed = i == context.dust_size_index
+		for i in range(_strengths.size()):
+			_strengths[i].button_pressed = not context.dust_erase and i == context.dust_strength_index
+		_erase.button_pressed = context.dust_erase
+
+
 ## Tiers: width, height, add and remove.
 class TierShelf extends HBoxContainer:
 	var context: EditorContext
