@@ -203,3 +203,64 @@ func test_every_tip_is_fast_to_pipe() -> void:
 		var ratio: float = average / maxf(round_average, 0.01)
 		check(ratio < 6.0, "%s: live piping costs %.1fx the round tip (under 6x)" % [tip.id, ratio])
 		check(average < 12.0, "%s: live piping stays under 12 ms per frame even when the laptop is slow (%.2f ms)" % [tip.id, average])
+
+
+## A two-tone bag and a metallic finish are saved with the stroke and come
+## back the same.
+func test_stripe_and_finish_round_trip() -> void:
+	var stroke: StrokeData = make_wavy_stroke(&"open_star", 60, 2.0)
+	stroke.stripe = Color(0.4, 0.6, 0.9)
+	stroke.shine = 1.0
+	var loaded: StrokeData = StrokeData.from_dict(JSON.parse_string(JSON.stringify(stroke.to_dict())))
+	check(loaded.stripe.is_equal_approx(Color(Color.from_string(stroke.stripe.to_html(false), Color.WHITE), 1.0)) and is_equal_approx(loaded.shine, 1.0), "stripe and finish survive saving")
+	var built: MeshArrays = concat(StrokeBuilder.build_stroke(stroke, Content.tip(&"open_star")).pieces)
+	var striped: int = 0
+	var metallic: bool = true
+	for c in built.colors:
+		if c.b > c.r:
+			striped += 1
+		metallic = metallic and c.a < 0.01
+	check(striped > built.colors.size() / 5, "one side of the line is the stripe colour (%d of %d)" % [striped, built.colors.size()])
+	check(metallic, "a metallic stroke marks every vertex as metallic")
+
+
+## The triple-line tip pipes three separate, parallel lines.
+func test_triple_line_pipes_three_lines() -> void:
+	var tip: TipDefinition = Content.tip(&"triple_line")
+	var stroke := StrokeData.new()
+	stroke.tip_id = tip.id
+	stroke.radius = 0.07
+	for i in range(80):
+		stroke.add_sample(Vector3(float(i) * 0.02, 0.0, 0.0), Vector3.UP, 1.0)
+	var built: StrokeBuilder = StrokeBuilder.build_stroke(stroke, tip)
+	var mesh: MeshArrays = concat(built.pieces)
+	var box: AABB = mesh.bounds()
+	check(box.size.z > 0.07 * 1.8, "the lines sit side by side (%.3f across)" % box.size.z)
+	# Nothing in the gaps between the lines.
+	var in_gap: int = 0
+	for v in mesh.verts:
+		if absf(absf(v.z) - 0.07 * 0.48) < 0.004 and v.x > 0.2 and v.x < 1.2:
+			in_gap += 1
+	check(in_gap == 0, "the three lines are separate (%d vertices between them)" % in_gap)
+
+
+## The serrated basketweave tip makes square-ended bars with a toothed top.
+func test_serrated_bars() -> void:
+	var tip: TipDefinition = Content.tip(&"basketweave_comb")
+	var stroke := StrokeData.new()
+	stroke.tip_id = tip.id
+	stroke.radius = 0.08
+	stroke.forward = Vector3.RIGHT
+	stroke.add_sample(Vector3.ZERO, Vector3.UP, 1.0)
+	var mesh: MeshArrays = concat(StrokeBuilder.build_stroke(stroke, tip).pieces)
+	var box: AABB = mesh.bounds()
+	check(box.size.x > box.size.z * 1.4, "a click makes a long bar (%.3f by %.3f)" % [box.size.x, box.size.z])
+	# Near its end the bar is still nearly full width (square, not pointed).
+	var end_x: float = box.end.x - box.size.x * 0.06
+	var width_near_end: float = 0.0
+	for v in mesh.verts:
+		if absf(v.x - end_x) < box.size.x * 0.04:
+			width_near_end = maxf(width_near_end, absf(v.z) * 2.0)
+	check(width_near_end > box.size.z * 0.6, "its ends are square (%.3f of %.3f)" % [width_near_end, box.size.z])
+	var teeth: int = (tip.profile as CombProfile).teeth
+	check(teeth >= 6, "the opening is toothed like a comb (%d teeth)" % teeth)

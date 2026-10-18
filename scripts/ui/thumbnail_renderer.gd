@@ -66,10 +66,22 @@ func _build_stage() -> void:
 	_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	add_child(_viewport)
 	var environment := Environment.new()
-	environment.background_mode = Environment.BG_CLEAR_COLOR
+	# A warm, bright surround for metal to reflect; the viewport stays
+	# see-through, so the cards show only the decoration.
+	environment.background_mode = Environment.BG_SKY
+	var sky_material := ProceduralSkyMaterial.new()
+	sky_material.sky_top_color = Color(1.0, 0.96, 0.9)
+	sky_material.sky_horizon_color = Color(1.0, 0.93, 0.85)
+	sky_material.ground_bottom_color = Color(0.7, 0.62, 0.56)
+	sky_material.ground_horizon_color = Color(0.95, 0.88, 0.8)
+	var sky := Sky.new()
+	sky.sky_material = sky_material
+	environment.sky = sky
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_color = Color(1.0, 0.95, 0.9)
 	environment.ambient_light_energy = 0.4
+	# Metal (gold dragees, glitter) needs something bright to reflect.
+	environment.reflected_light_source = Environment.REFLECTION_SOURCE_BG
 	environment.tonemap_mode = Environment.TONE_MAPPER_AGX
 	var world := WorldEnvironment.new()
 	world.environment = environment

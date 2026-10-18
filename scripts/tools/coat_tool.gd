@@ -24,11 +24,11 @@ func press(hit: CakePicker.Hit, _screen_position: Vector2) -> bool:
 	if tier == null:
 		return false
 	var coated: bool = not context.coat_naked
-	if tier.coated == coated and tier.coat_color.is_equal_approx(context.color):
+	if tier.coated == coated and tier.coat_color.is_equal_approx(context.color) and is_equal_approx(tier.coat_shine, context.shine):
 		context.toast("That tier already has this coat")
 		return true
 	# A fresh coat starts with soft spatula marks; the spatula smooths it.
-	context.commands.run(TierCommands.CoatTier.new(context.model, tier.id, context.color, coated, 0.45))
+	context.commands.run(TierCommands.CoatTier.new(context.model, tier.id, context.color, coated, 0.45, true, context.shine))
 	coat_applied.emit(hit.world_position, context.color)
 	return true
 

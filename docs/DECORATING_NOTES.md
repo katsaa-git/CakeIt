@@ -7,79 +7,35 @@ to extend it, and what still needs work. Newest milestone first in the log.
 
 **Finished and committed:** milestones A (version check, piping core,
 performance), B (turntable, tiers, coat, spatula, interface layout), C
-(lighting, set and look), D (the ten piping tips) and E (decorations).
+(lighting, set and look), D (the ten piping tips), E (decorations) and
+E2 (more content and shimmer).
 
-**In progress: milestone E2 (more content and shimmer), paused on request.**
 Godot is at `C:\Users\celia\CakeGame\Godot_v4.7.2-stable_win64.exe` (use
 the `_console` one from a terminal).
 
-Done in E2 so far (committed, tested, launches cleanly):
+**What E2 added** (details in the sections below):
 
-- **Ten new piping tips** (20 in all), see "The piping tips": Writing,
-  French Star, Rosette Swirl (1M), Twisted Rope, Bead Border, Lace Scallop,
-  Russian Flower, Tulip, Chrysanthemum, Triple Line. New classes:
-  `RopeProfile`, `RosetteStamp`, `PetalFlowerStamp` (Russian flower and
-  tulip), `SpikyFlowerStamp`, `ScallopStamp`; tips with several openings
-  (`TipDefinition.openings`) and steadier lines (`smoothing`).
-- **Two-tone bag in the data and builder** (`StrokeData.stripe`): one side
-  of the opening in the second colour; Russian/tulip petals blush toward
-  it, multi-line tips alternate it. Visible in `--scenario=tips --page=2`.
-  *No button for it yet* (see next steps).
-- **Metallic finish ("shine") in the data and shaders**: `StrokeData.shine`,
-  `DecorationData.shine`, `TierData.coat_shine` (all saved in `to_dict`),
-  drawn by `apply_finish` in `art/shaders/shimmer.gdshaderinc`. *Nothing
-  sets it yet* (needs the metallic palette).
-- **Lustre dust foundations**: `ShimmerMask` (a 256x128 picture per tier,
-  wrapped round it; survives resizing; saved as PNG/base64 in
-  `TierData.to_dict`), `TierCommands.PaintShimmer` (undo per brush press),
-  Clear all also clears dust, per-tier materials (`TierMaterials`) and
-  the shader side (`apply_shimmer`: soft sheen plus tiny glinting flakes).
-  *No brush tool yet*, so it cannot be seen in game.
-- **Decoration framework**: mixed-shape decorations (`variants`), a BAND
-  placement for ribbons, `shader_override`, `uses_text()`, builders that
-  remap themselves on resize (`remap_unique`), `BowBuilder` and
-  `RibbonBuilder` (satin, lace, optional bow). `extrude` now handles any
-  simple outline (crescents). *No new decoration .tres files yet*; the
-  Treats and Ribbons tabs are left out of `CATEGORIES` until they have items.
-- Faster stamp tips: pending stamps are reused between frames (flower tips
-  went from ~1.4 ms to ~0.4 ms a frame on a long drag).
+- **21 piping tips** (11 new): Writing, French Star, Rosette Swirl (1M),
+  Twisted Rope, Bead Border, Lace Scallop, Russian Flower, Tulip,
+  Chrysanthemum, Triple Line and Serrated Weave (a true toothed
+  basketweave tip with square-ended bars).
+- **A two-tone bag** (Bag section on the piping shelf): a second colour
+  down one side of the line; flower petals blush into it, multi-line tips
+  alternate it.
+- **60 decorations** (42 new) in nine tabs, including two new tabs
+  (Treats, Ribbons), ribbons and sugar lace dragged round a tier's side,
+  fondant letters that bend round the side, and mixed-shape sprinkle
+  medleys.
+- **Colours**: 40 frosting colours, a Metallic tab (gold, rose gold,
+  silver, bronze, copper, champagne and four pearls) that makes piping,
+  coats and decorations shine, named colour mixes for decorations, and a
+  custom colour picker.
+- **Lustre dust** (tool L): a soft brush that dusts shimmer over the coat,
+  piping and decorations where you paint it.
+- Paged shelves (arrows, wheel, page counter), metallic swatches, a tool
+  rail button and shelf for the dust brush.
 
-**Exact next steps to finish E2** (in this order):
-
-1. Decoration tool: BAND placement (drag round the side; a click wraps all
-   the way; snap to the base), colour mixes (`context.mix`) and shine
-   (`context.shine`) on placed pieces. A `lace.gdshader` (a copy of
-   `decoration.gdshader` that discards holes from UV) for lace trim.
-2. Decoration .tres files and builders, as planned in the brief: fruit
-   (strawberry whole/half, blackberry, citrus and kiwi slices, fig, grapes,
-   pomegranate seeds), fondant (butterfly, moon, cloud, leaf cut-outs with
-   `CutoutBuilder`; letters via a `TextMesh`-based unique builder that
-   bends round the side with `wrap_round`/`side_curve`; bow; plaque;
-   bunny, bee, mushroom figures), flowers (peony and tulip by giving
-   `RoseBuilder` exported rings; sunflower and forget-me-not by extending
-   `DaisyBuilder`; lavender and baby's breath sprigs; leaves), sprinkles
-   (hearts, stars, pearl mix, sanding sugar, two medleys using `variants`),
-   ribbons (satin, satin with bow, lace), treats (macarons, meringue
-   kisses, mini donuts, wafer rolls), chocolate shards, glitter stars,
-   bunting topper. Then put Treats and Ribbons back in `CATEGORIES`.
-3. Palettes: more frosting colours, a metallic palette (gold, rose gold,
-   silver, bronze, copper, champagne, pearl, with a shine per swatch),
-   named colour mixes (`data/palettes/`), and a palette panel with tabs
-   (Colours / Metallic / Mixes), a scrolling grid and a custom picker.
-   `EditorContext.set_color(color, shine)` and `set_mix` are ready.
-4. The dust brush tool (key L): soft round brush that calls
-   `ShimmerMask.dab` on the tier under the cursor, uploads the mask with
-   `TierView.apply_shimmer`, one `PaintShimmer` per press; size, strength
-   (whisper / shimmer / painted) and a brush-off option. Then tune the
-   look on real screenshots and measure it on the heavy cake.
-5. Shelves: a pipe-shelf control for the two-tone bag (`set_two_tone`,
-   `set_color_slot`), proper pages or arrows for the 20 tips instead of
-   the interim scroll bar, tabs for the bigger decoration shelf, tooltips.
-6. Tests (new decorations, dust undo/resize/save, ribbon remap), input
-   test steps (dust brush, ribbon drag), showcase scenarios, benchmark and
-   deco_bench side by side, then this document's content tables.
-
-**After E2: milestone F (juice and audio).** Not started.
+**Next: milestone F (juice and audio).** Not started.
 
 **Exact next steps for F:**
 
@@ -90,7 +46,8 @@ Done in E2 so far (committed, tested, launches cleanly):
    candies (`DecorationTool.placed`), a soft thunk when a tier lands
    (`CakeView.tier_added_visual`), a whoosh for undo/redo
    (`ToolController.undo_performed` / `redo_performed`) and UI taps
-   (`IconButton.tapped`, card presses). A master volume setting.
+   (`IconButton.tapped`, card presses), a soft brushing whisper while the
+   lustre dust brush moves (`DustTool.dusting`). A master volume setting.
 2. Juice: a small pop (scale spring) for placed decorations, a puff of
    sugar-dust particles where a coat lands (`CoatTool.coat_applied`) and
    when the spatula finishes (`SpatulaTool.fully_smooth`), a gentle camera
@@ -137,8 +94,9 @@ Done in E2 so far (committed, tested, launches cleanly):
   still works).
 - Tip thumbnails are rendered in white and tinted on the card, so changing
   colour never re-renders them.
-- Decorations draw with one MultiMesh per kind per tier; only drips and
-  signs (built to fit, or with their own words) are separate meshes.
+- Decorations draw with one MultiMesh per kind (and shape) per tier; only
+  drips, ribbons, signs, plaques and letters (built to fit, or with their
+  own words) are separate meshes.
 - A ganache drip that goes all the way round covers the whole top.
 - Candles and toppers only go on top surfaces; the ghost fades where a
   piece is not allowed.
@@ -170,17 +128,18 @@ Done in E2 so far (committed, tested, launches cleanly):
 | --- | --- |
 | Left-drag on the cake | Pipe |
 | Left-click on the cake | A dot / kiss / single stamp (hold still to make it bigger) |
-| Decorations: click / drag / hold | Place one, a string (pearls), a spray (sprinkles), or drag along the rim (drips) |
+| Decorations: click / drag / hold | Place one, a string (pearls), a spray (sprinkles), drag along the rim (drips) or round the side (ribbons; a click wraps all the way) |
+| Lustre dust: hold and brush | Dust shimmer where you brush; the longer, the richer |
 | Right-drag | Orbit the camera |
-| Mouse wheel | Zoom |
+| Mouse wheel | Zoom (over a shelf: next / previous page) |
 | Middle-drag | Pan up and down |
 | Drag the stand's rim, or Space + left-drag | Spin the turntable (flick it to let it coast) |
 | A / D (hold) | Spin the turntable smoothly |
 | R | Auto-spin on / off |
-| 1, 2, 3 | Tip size presets |
+| 1, 2, 3 | Tip size presets (with the dust brush: brush size) |
 | Ctrl + wheel, or [ and ] | Fine-tune tip size |
 | Tab / Shift + Tab | Next / previous tip |
-| B, C, F, V, T | Tools: piping bag, frosting coat, smoothing scraper, decorations, tiers |
+| B, C, F, V, L, T | Tools: piping bag, frosting coat, smoothing scraper, decorations, lustre dust, tiers |
 | Turntable ring (bottom right) | Drag round to spin; click the middle for auto-spin |
 | H | Controls card |
 | Ctrl + Z, Ctrl + Y (or Ctrl + Shift + Z) | Undo, redo |
@@ -190,9 +149,10 @@ Done in E2 so far (committed, tested, launches cleanly):
 Everything is created from code; there are no hand-made models.
 
 - **Data (gameplay side)** lives in `scripts/cake/`: `CakeModel` holds the
-  tiers (`TierData`), piped strokes (`StrokeData`, with tip id, size preset,
-  colour and path) and decorations (`DecorationData`). A future scoring system
-  only needs to read this.
+  tiers (`TierData`, with its coat, finish and dust), piped strokes
+  (`StrokeData`, with tip id, size preset, colour, stripe, finish and path)
+  and decorations (`DecorationData`). A future scoring system only needs to
+  read this.
 - **Every change is a command** (`scripts/commands/`), run through
   `CommandStack`, so undo and redo work the same for everything.
 - **Visuals** (`CakeView`, `TierView`, `StrokeBatch`) only react to the model's
@@ -211,72 +171,97 @@ Everything is created from code; there are no hand-made models.
 
 ## The tools
 
-- **Piping bag (B)**: pipe lines, dots, kisses, shells, flowers, leaves,
-  ruffles, basketweave and grass with ten tips (see below). Tips, sizes and
-  fine size are on the bottom shelf; colours on the right.
+- **Piping bag (B)**: 21 tips (see below). Tips (a page at a time), the bag
+  (plain or two-tone), sizes and fine size are on the bottom shelf; colours
+  on the right.
 - **Frosting coat (C)**: pick a colour (and "Smooth buttercream" or
   "Semi-naked"), then click a tier. The new coat spreads from the top centre
-  down the sides.
+  down the sides. A metallic colour gives a painted gold (silver...) coat.
 - **Smoothing scraper (F)**: hold it against a coated tier and let the cake
   spin under it (A / D or the ring), or drag along the side. Spatula marks fade
   to a glass-smooth finish; one undo step per press.
 - **Decorations (V)**: pick a tab and an item on the shelf, then click,
   drag or hold on the cake (see "The decorations" below). Colours come from
-  the palette unless the item has its own (cherries, gold, rainbow mixes).
+  the palette (a metallic swatch makes them shine; a Mix gives each piece
+  a colour from it) unless the item has its own (cherries, gold dragées).
+- **Lustre dust (L)**: a soft dusting brush. Pick a colour (the palette
+  opens on Metallic), a brush size and how rich the shimmer gets
+  (Whisper / Shimmer / Gold paint), then brush over the cake: coat, piping
+  and decorations under the brush all take the dust. "Brush off" takes it
+  away. One undo step per press. See "Lustre dust and metallic colours".
 - **Tiers (T)**: click a tier to select it, then pick a width (Petite, Small,
   Medium, Large) and height (Short, Classic, Tall), add a tier on top or
-  remove one. Piping and decorations on a resized tier move with its surface.
+  remove one. Piping, decorations and dust on a resized tier move with its
+  surface.
 
 ## The piping tips
 
-Twenty tips, all data in `data/tips/` (shelf order is `sort_order`; the E2 tips slot in between):
+21 tips, all data in `data/tips/` (shelf order is `sort_order`):
 
 | Tip | How it works | Drag | Click |
 | --- | --- | --- | --- |
 | Round | `RoundProfile` | lines, writing | dot / pearl (hold to grow) |
+| Writing | `RoundProfile`, tiny sizes, `smoothing` 8 | steady lettering | a small dot |
 | Open Star | `StarProfile`, 8 soft ridges | ridged lines, borders | star kiss with a twist |
+| French Star | `StarProfile`, 16 fine ridges | pleated borders | soft star kiss |
 | Closed Star | `StarProfile`, 10 deep, tight grooves | bold borders, ropes | twisted star |
+| Rosette Swirl | `RosetteStamp` (1M-style swirl) | a row of rosettes | one rosette |
+| Twisted Rope | `RopeProfile` (3 strands) + `twist_rate` | rope border | twisted kiss |
 | Shell | `ShellStamp` on a star profile | a row of overlapping shells | one shell |
+| Bead Border | `ShellStamp` on a round profile | a string of beads | one bead |
+| Lace Scallop | `ScallopStamp` (arcs, dots, teardrop) | scalloped lace (hangs down on the side, bows out on top) | one scallop |
 | Drop Flower | `DropFlowerStamp` on a 5-lobed star | a row of flowers | one flower with a sunny middle |
+| Russian Flower | `PetalFlowerStamp`, three rows round a bud | a row of flowers | one flower |
+| Tulip | `PetalFlowerStamp`, six tall pointed petals | a row of tulips | one tulip |
+| Chrysanthemum | `SpikyFlowerStamp` | a row of mums | one mum |
 | Leaf | `LeafProfile` (V-notch vein, pointed sides), `end_style` POINT | a leaf drawn out to a point | a small leaf |
 | Petal | `PetalProfile` (slanted teardrop) | swags, ribbons | one petal |
 | Ruffle | `PetalProfile` with `frill`, plus `wave_amplitude` | a frilly border | one petal |
 | Basketweave | `RibbonProfile` (flat band, ribbed top) | ribbons | one bar of the weave |
-| Grass | `GrassStamp` (tufts of tapered strands) | a lawn | one tuft |
-| Writing | `RoundProfile`, tiny sizes, `smoothing` 8 | steady lettering | a small dot |
-| French Star | `StarProfile`, 16 fine ridges | pleated borders | soft star kiss |
-| Rosette Swirl | `RosetteStamp` (1M-style swirl) | a row of rosettes | one rosette |
-| Twisted Rope | `RopeProfile` (3 strands) + `twist_rate` | rope border | twisted kiss |
-| Bead Border | `ShellStamp` on a round profile | a string of beads | one bead |
-| Lace Scallop | `ScallopStamp` (arcs, dots, teardrop) | scalloped lace | one scallop |
-| Russian Flower | `PetalFlowerStamp`, three rows round a bud | a row of flowers | one flower |
-| Tulip | `PetalFlowerStamp`, six tall pointed petals | a row of tulips | one tulip |
-| Chrysanthemum | `SpikyFlowerStamp` | a row of mums | one mum |
+| Serrated Weave | `CombProfile` (one smooth side, one toothed like a comb) | a toothed stripe | one square-ended bar (`click_ends` 0.1) |
 | Triple Line | round profile, `openings` (three lines) | three parallel lines | three dots |
+| Grass | `GrassStamp` (tufts of tapered strands) | a lawn | one tuft |
 
 - **Clicks** (`click_length` above 0): a short piece laid along the surface
   the way the bag is held (the camera's right). The direction is stored in
   `StrokeData.forward`, so rebuilding from data (resizing a tier, loading)
-  gives exactly the same piece.
+  gives exactly the same piece. `click_ends` says how rounded its ends are
+  (0.5 soft and lens-like, 0.1 square bars for basketweave).
 - **Stamps** (`behavior` STAMP): `StrokeBuilder` places one every
   `stamp_spacing` tip radii along the drag; a `StampShape` subclass builds
   each one. Stamps are gathered into pieces of ~6000 vertices, and each gets
   a 24-triangle dome for picking (`StampShape.add_collision` /
-  `collision_extent`) instead of its full geometry.
-- **Thumbnails**: `TipThumbnails` pipes a small white sample of each tip in a
-  hidden mini scene once at start-up; the tip cards tint it with the current
+  `collision_extent`) instead of its full geometry. Round stamps (flowers,
+  rosettes) ignore the drag direction, so a stamp still being piped is
+  reused from the last frame instead of rebuilt; stamps that follow the
+  drag (shells, grass, scallops) say so in `follows_direction()`.
+- **Several openings** (`openings`, `opening_size`): one child builder per
+  line. Samples wait until the drag direction is clear, so the lines start
+  side by side, then each line gets the sample moved sideways.
+- **Two-tone bag** (`StrokeData.stripe`, alpha 0 = plain): the side of the
+  opening with x below 0 takes the stripe colour (`TubeBuilder.bag_colors`),
+  so lines get a stripe and twisted shapes swirl; Russian flower and tulip
+  petals blush into it toward their edges, grass and multi-line tips
+  alternate it.
+- **Thumbnails**: `ThumbnailRenderer` pipes a small white sample of each tip
+  in a hidden mini scene once at start-up (a single stamp for tips whose
+  `StampShape.shows_alone()`); the tip cards tint it with the current
   colour. Its multisampling matches the main view (2x): a different setting
-  made the GPU build a new pipeline and caused a 60 ms hitch.
-- Sampler of the tips: `--scenario=tips --shots=... --angles=overhead,close` (the first ten; add `--page=2` for the E2 tips, some in a two-tone bag).
-- Round stamps (flowers, rosettes) ignore the drag direction, so a stamp still being piped is reused from the last frame instead of rebuilt (`StrokeBuilder._stamp_geometry`). Stamps that follow the drag (shells, grass, scallops) say so in `follows_direction()`.
+  made the GPU build a new pipeline and caused a 60 ms hitch. The mini scene
+  has a soft cream sky so metal (gold dragées, glitter) has something to
+  reflect, while the cards stay see-through.
+- Sampler of the tips: `--scenario=tips --shots=... --angles=overhead,close`
+  shows the first ten; `--page=2` the E2 tips (some in a two-tone bag).
+  `--scenario=weave` covers a cake in basketweave (`--tip=basketweave` for
+  the plain tip).
 
 ## Adding a new piping tip
 
 1. Copy a file in `data/tips/` (for example `02_open_star.tres`) and rename it.
 2. Change `id`, `display_name`, `description` and `sort_order`.
 3. Adjust the profile numbers (points, depth, ridge fullness...) and the feel
-   settings (end style, lift, click length, speed thinning, dwell growth,
-   sizes).
+   settings (end style, lift, click length and ends, speed thinning, dwell
+   growth, smoothing, sizes). Several openings: list them in `openings`.
 4. Run the tests (they check every tip: valid data, sound geometry, live
    piping identical to a rebuild, fast enough). No code changes needed.
 
@@ -284,74 +269,134 @@ A brand-new cross-section shape needs a small `TipProfile` subclass in
 `scripts/piping/profiles/` (one function that returns the outline points;
 `counter_clockwise()` fixes the winding). A new repeated shape needs a
 `StampShape` subclass in `scripts/piping/stamps/` (`emit` adds one stamp's
-geometry). **After adding any new script with a `class_name`, run the
-editor import once** (`--headless --path . --import`), or the game fails to
-start with "Identifier not declared".
+geometry, using `context.colors_for(...)` so two-tone bags work;
+`follows_direction()` and `shows_alone()` if they apply). **After adding
+any new script with a `class_name`, run the editor import once**
+(`--headless --path . --import`), or the game fails to start with
+"Identifier not declared".
 
 ## The decorations
 
-Eighteen decorations, all data in `data/decorations/` (one
-`DecorationDefinition` each), in seven shelf tabs:
+60 decorations, all data in `data/decorations/` (one `DecorationDefinition`
+each), in nine shelf tabs (a page of eight at a time):
 
 | Tab | Decorations | How you place them |
 | --- | --- | --- |
-| Sprinkles | rainbow sprinkles, confetti, nonpareils | hold and move to spray |
+| Sprinkles | rainbow sprinkles, confetti, nonpareils, heart sprinkles, star sprinkles, glitter stars, pearl mix, sanding sugar, festive medley, pastel medley | hold and move to spray |
 | Pearls | sugar pearls, gold and silver dragées | click for one, drag for a string |
-| Chocolate | ganache drip, chocolate curls | drag along a tier's top edge / spray |
-| Fondant | heart, star, blossom | click (they face up the screen) |
-| Flowers | daisy, rose | click |
-| Fruit | raspberry, blueberry, cherry | click |
-| Candles & toppers | candle (lit), topper sign with your own words | click, top of a tier only |
+| Chocolate | ganache drip, chocolate curls, chocolate shards | drag along the top edge / spray / click on top |
+| Fondant | heart, star, blossom, butterfly, moon, cloud, leaf, letters, bow, plaque, bunny, bee, toadstool | click (cut-outs face up the screen; figures sit on top) |
+| Flowers | daisy, rose, peony, tulip, sunflower, forget-me-nots, lavender, baby's breath, leaves | click (forget-me-nots: spray) |
+| Fruit | raspberry, blueberry, cherry, strawberry, halved strawberry, blackberry, orange, lemon and kiwi slices, halved fig, grapes, pomegranate seeds | click (seeds: spray) |
+| Treats | macaron, meringue kiss, mini donut, wafer roll | click (meringues: drag for a row; wafer rolls on top) |
+| Ribbons | satin ribbon, ribbon & bow, sugar lace | drag round the side of a tier; a click wraps it all the way |
+| Candles & toppers | candle (lit), topper sign with your own words, bunting | click, top of a tier only |
+
+Sizes are real: a strawberry is 3 cm tall, an orange slice 5 cm across, a
+macaron 3.4 cm, letters 2.4 cm tall, a ribbon 2 cm wide (1 unit = 10 cm).
 
 How it works:
 
 - **Definition** (`scripts/decorations/decoration_definition.gd`): what it
   is (id, name, tab, tags), how it is placed (`placement` SINGLE / LINE /
-  SCATTER / RIM, `align` on the surface or upright, `facing` random or
-  toward the viewer, `top_only`, spacing, spray radius and rate, sink, tilt
-  and size jitter), how it looks (`builder`, optional `scene_override`
-  .glb, `color_mode` PICKED / FIXED / MIX with `colors`, roughness,
-  metallic, clearcoat, subsurface, pearl sheen, shadows) and its three sizes.
+  SCATTER / RIM / BAND, `align` on the surface or upright, `facing` random
+  or toward the viewer, `top_only`, spacing, spray radius and rate, sink,
+  tilt and size jitter), how it looks (`builder`, optional `variants` for
+  mixed shapes, `scene_override` .glb or `shader_override`, `color_mode`
+  PICKED / FIXED / MIX with `colors`, roughness, metallic, clearcoat,
+  subsurface, pearl, sheen, shadows) and its three sizes.
 - **Builders** (`scripts/decorations/builders/`) make one piece at size 1
   with `MeshArrays`; vertex colour alpha marks the parts that take the
-  piece's colour (a daisy's yellow middle keeps its own). Drips and topper
-  signs are "unique": built per placed piece (drips from the tier's size and
-  the rim angles in `DecorationData.path`; signs with `DecorationData.text`
-  shown by a Label3D).
+  piece's colour (a daisy's yellow middle keeps its own). Helpers in
+  `DecorationBuilder`: spheres and blobs, lathes, tubes, `extrude` for any
+  flat outline (triangulated, with a soft bevel), `wrap_round` to bend flat
+  pieces round a tier's side. "Unique" builders build each placed piece on
+  its own: drips (rim angles in `DecorationData.path`), ribbons (path plus
+  height and size in the transform, built in the tier's frame:
+  `piece_transform`), topper signs and plaques (words in
+  `DecorationData.text`, a Label3D), and letters (a `TextMesh` word bent
+  round the side). Builders that keep their own placement data say how to
+  move on a resized tier (`remap_unique`: a ribbon at the base stays at
+  the base).
+- **Mixes**: `variants` lists extra builders; each piece's shape comes from
+  its seed (`variant_for`), so a medley needs nothing extra saved.
+- **Colours**: PICKED pieces take the picked colour and its finish
+  (`DecorationData.shine`), or a random colour of the picked Mix; MIX
+  pieces use their own colours unless a Mix is picked; FIXED never change.
 - **Drawing** (`DecorationLayer`, one per tier and one for the stand's
-  plate): one MultiMesh per kind, with each piece's colour and a random
-  number in the instance custom data (`art/shaders/decoration.gdshader`).
-  Candle flames are one MultiMesh of billboards
-  (`art/shaders/candle_flame.gdshader`) plus one flickering warm light per
-  tier. Changes are applied once per frame, or at once with `flush()`.
+  plate): one MultiMesh per kind and shape, with each piece's colour, finish
+  and a random number in the instance custom data
+  (`art/shaders/decoration.gdshader`). Unique pieces get their finish from
+  the `piece_shine` instance uniform. Sugar lace uses `lace.gdshader`, which
+  cuts the lace holes from the texture coordinates. Candle flames are one
+  MultiMesh of billboards plus one flickering warm light per tier.
 - **Tool** (`DecorationTool`, key V): a translucent ghost shows the piece
   before you click (faded where it is not allowed); sprays re-pick the
   surface under every sprinkle so they land on piping, over the edge and on
-  the stand; drips follow the cursor round the rim, and spinning the cake
-  while holding pours further round. Everything from one press is one undo
-  step (shown in a temporary layer while the button is held).
-- **Shelf**: tabs over 3D cards (pictures by `ThumbnailRenderer`, the same
-  one the tips use), three sizes, a hint for the current item, and the words
-  for the topper sign.
-- Decorations on a resized tier move with its surface (`ItemRemap`); drips
-  rebuild to fit.
+  the stand; drips and ribbons follow the cursor round the tier, and
+  spinning the cake while holding goes further round. Ribbons snap to the
+  base or the top edge when pressed close to them. Everything from one
+  press is one undo step.
+- **Shelf**: tabs over pages of 3D cards (pictures by `ThumbnailRenderer`),
+  three sizes, a hint for the current item, and a Words box for signs,
+  plaques and letters.
+- Sampler: `--scenario=gallery --tab=fruit` (any tab id) lays a tab's
+  decorations out on a plain cake, ribbons round the side and word pieces
+  on the side too; `--scenario=decorations` is the original showcase.
 
 ## Adding a new decoration
 
 1. Copy a file in `data/decorations/` and change `id`, `display_name`,
-   `description`, `category` (one of the tabs in
+   `description` (the shelf tooltip), `category` (one of the tabs in
    `DecorationDefinition.CATEGORIES`) and `sort_order`.
 2. Pick a builder and its numbers (a new shape needs a small
    `DecorationBuilder` subclass with `build()` and `radius()`), the placement
-   settings and the look.
+   settings and the look. A mix of shapes: add builders to `variants`
+   (see `24_festive_medley.tres`). A ribbon-like band: `placement` 4 with a
+   `RibbonBuilder`. Words: a builder whose `uses_text()` is true.
 3. Run the import once if you added a script, then the tests (every
-   decoration is checked for valid data and sound geometry).
+   decoration, and every shape of a mix, is checked for valid data and
+   sound geometry).
 
 ## Adding tier sizes or colours
 
 - Tier sizes: add a `.tres` in `data/tiers/` (copy one): `kind` 0 = width
   (value is the radius), 1 = height. The tier shelf picks it up automatically.
-- Colours: edit `data/palettes/frosting.tres` (colour and name lists).
+- Colours: each `.tres` in `data/palettes/` is a tab of the colour panel
+  (`sort_order`): `frosting.tres` (40 colours with names), `metallic.tres`
+  (with a `shines` value per colour: 1 metallic, about 0.5 pearl) and
+  `mixes.tres` (`mix_sizes` cuts the colour list into named mixes; `tools`
+  limits the tab to the decoration tool). Add colours by adding to the
+  lists, or a new palette by adding a file. Keep the first fourteen frosting
+  colours where they are (tests and scenarios use them).
+
+## Lustre dust and metallic colours
+
+- **Metallic colours** are a finish, `shine` (0 plain, 1 metallic, about
+  0.5 pearl), stored with each stroke, decoration and coat. Piping carries
+  it in vertex-colour alpha (so merged strokes keep their own finish),
+  decorations in the MultiMesh custom data, coats in a uniform. The shaders
+  share `apply_finish` (`art/shaders/shimmer.gdshaderinc`): metal and lower
+  roughness for gold and silver, a soft rainbow sheen for pearl.
+- **Lustre dust** lives in one `ShimmerMask` per tier: a 256x128 picture
+  wrapped round the tier (round the side, then in across the top), holding
+  the dust colour (premultiplied, linear) and amount. The coat, piping and
+  decoration shaders all look it up at their own position (`apply_shimmer`),
+  so a brush stroke dusts whatever is under it. It adds a soft metallic
+  sheen in the dust colour and fine flakes (about 0.3 mm tilted mirrors
+  that catch the light one by one as the cake turns, fading out before they
+  get smaller than a pixel so they never fizz).
+- Because the picture is stretched over the tier, dust stays put when the
+  tier is resized. It saves as a small PNG in base64 (`TierData.to_dict`).
+  One press of the brush is one `TierCommands.PaintShimmer` holding only the
+  changed rectangle, before and after. Clear all brushes dust off too.
+- Each tier has its own copies of the piping and decoration materials
+  (`TierMaterials`) carrying its dust picture and size. Decorations find
+  their place on the tier through the global shader parameter
+  `cake_from_world` (declared in `project.godot`, set each frame by
+  `CakeView`).
+- Sampler: `--scenario=shimmer` (gold dust, gold-painted roses, gold leaf
+  stars, a metallic piped scroll and pearl dust).
 
 ## Tests and tools
 
@@ -366,9 +411,15 @@ How it works:
 - What each part of the bakery set costs: `... --path . -- --scenario=set_sweep`
 - Shadow layout comparison: `... --path . -- --scenario=shadow_sweep`
 - Tier demo: `... --path . -- --scenario=tiers --shots=C:/some/folder`
-- Every tip on one cake: `... --path . -- --scenario=tips --shots=C:/some/folder --angles=overhead,close`
+- Ten tips on one cake: `... --path . -- --scenario=tips --shots=C:/some/folder --angles=overhead,close` (`--page=2` for the E2 tips)
 - Every decoration on a two-tier cake: `... --path . -- --scenario=decorations --shots=C:/some/folder --angles=front,close,high`
 - Decorated cake benchmark: `... --path . -- --scenario=deco_bench`
+- One tab of decorations up close: `... --path . -- --scenario=gallery --tab=fruit --shots=C:/some/folder --angles=overhead,front`
+- Lustre dust and metallic colours: `... --path . -- --scenario=shimmer --shots=C:/some/folder --angles=close,front`
+- A basketweave cake: `... --path . -- --scenario=weave --shots=C:/some/folder`
+- Benchmark with every tier fully dusted: `... --path . -- --scenario=bench --dust=true`
+- `--hide_ui=true` hides the interface during a benchmark (its draw calls
+  are then only the 3D scene's).
 - Extra flags: `--ui=true` keeps the interface in shots, `--tools=true` shows
   the piping bag, `--tool=tiers` picks a tool first.
 - Benchmarks at a tiny window (`--resolution 384x216` before `--`) show the
@@ -384,6 +435,26 @@ vsync off, on mains power).
 **Laptop speed changes a lot.** Throttled (hot, or on battery) the same build
 measured 47 fps where it now measures 149 fps. Only compare numbers taken
 side by side, and alternate the two builds (B, C, B, C) when you do.
+
+### End of milestone E2 (side by side with E, on mains power)
+
+Each build run twice, alternating (E, E2, E2 with every tier dusted, E,
+E2, E2 dusted):
+
+| Case | E | E2 | E2, every tier dusted |
+| --- | --- | --- | --- |
+| Heavy 3-tier cake spinning (avg fps) | 139 / 130 | 137 / 142 | 137 / 138 |
+| Same, GPU ms | 6.5 / 7.0 | 6.7 / 6.5 | 6.7 / 6.6 |
+| Decorated cake spinning (`deco_bench`, avg fps) | 173 / 158 | 168 / 169 | |
+| Piping a long line live (stroke cost avg) | 1.7 / 1.5 ms | 1.7 / 1.7 ms | 1.5 / 1.7 ms |
+
+So the finish and dust shading cost nothing measurable, even with all the
+cake dusted (the dust lookup is skipped on tiers without dust). Live
+piping of flower tips got about 3x cheaper (pending stamps are reused).
+Draw calls went from ~360 to ~550, all of it the interface (bigger palette
+panel, paged shelves): with `--hide_ui=true` the decorated cake is 117 draw
+calls. At start-up the thumbnail stage renders 81 pictures over roughly two
+seconds.
 
 ### End of milestone C (full bakery set)
 
@@ -447,12 +518,18 @@ a long stroke cost ~39 ms. What changed then:
 
 ## Known issues
 
-- E2 is half done (see the handoff): the two-tone bag, metallic colours
-  and lustre dust work in data and shaders but have no controls yet, and
-  the 20 tip cards scroll sideways (Shift + wheel or the bar) until the
-  shelf gets proper pages.
-- Benchmarks were not re-run for E2 yet (the shaders gained a dust/finish
-  branch that is skipped when unused; measure side by side on mains power).
+- Sugar peonies look a little like crumpled paper close up (many thin,
+  ruffled petals); worth another art pass. Sugar roses are faceted up close.
+- The dust brush deposits per frame, so a fast scripted path (or a very
+  fast hand) dusts more where it lingers; by hand it feels natural.
+- Dust colours are stored at 8 bits, so very dark dust colours band a
+  little (metallic and pearl colours look right).
+- Fondant letters and plaque words use a system font (Segoe UI); letters
+  have crisp, unbevelled edges. A bundled cosy font would look better (G).
+- The colour panel and paged shelves add about 190 interface draw calls
+  (no measurable frame cost); swatches could be drawn into one texture in G.
+- Ribbons are drawn on top of piping on the side (they do not tuck under
+  borders) and only wrap round tiers, not the stand.
 - Decorations are not pickable (you cannot pipe on top of a fondant heart;
   the piping lands on the cake underneath).
 - A single decoration can only be removed with undo or Clear all; a "pick
@@ -481,12 +558,20 @@ a long stroke cost ~39 ms. What changed then:
 
 ## Milestone log
 
-- **E2. More content and shimmer (in progress).** Ten new tips (Writing,
-  French Star, Rosette Swirl, Twisted Rope, Bead Border, Lace Scallop,
-  Russian Flower, Tulip, Chrysanthemum, Triple Line), two-tone bag and
-  metallic finish in the data and shaders, lustre-dust mask, command and
-  shaders, decoration framework for mixes, ribbons and text. See the
-  handoff for what is left.
+- **E2. More content and shimmer.** Eleven new tips (Writing, French Star,
+  Rosette Swirl, Twisted Rope, Bead Border, Lace Scallop, Russian Flower,
+  Tulip, Chrysanthemum, Triple Line, Serrated Weave) with new profiles and
+  stamps, tips with several openings, square-ended click bars, and a
+  two-tone bag. 42 new decorations (fruit, fondant shapes, letters, bows,
+  plaques and figures, flowers, sprinkle medleys, chocolate shards,
+  treats, ribbons and sugar lace, bunting) with new builders, mixed-shape
+  variants, BAND placement and a lace shader. 40 frosting colours, a
+  metallic palette that gives pieces a shiny finish, colour mixes, a
+  tabbed colour panel with a custom picker. Lustre dust: a per-tier dust
+  mask, a dust brush tool (L) and a shared shimmer shader. Paged shelves.
+  New tests (shimmer, palettes, mixes, letters, ribbons, two-tone, triple
+  line, serrated bars), input-test steps, and gallery, shimmer and weave
+  scenarios. Benchmarks side by side: no measurable cost.
 - **E. Decorations.** Eighteen decorations as data in seven shelf tabs:
   sprinkles, confetti, nonpareils, sugar pearls, gold and silver dragées,
   ganache drip, chocolate curls, fondant heart / star / blossom, daisy,

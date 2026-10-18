@@ -37,7 +37,7 @@ static func make(new_tip: TipDefinition, hotkey_hint: String = "") -> TipCard:
 static func make_for(definition: DecorationDefinition) -> TipCard:
 	var card := TipCard.new()
 	card.title = definition.display_name
-	card.tint_thumbnail = definition.uses_palette() and definition.placement != DecorationDefinition.Placement.RIM
+	card.tint_thumbnail = definition.uses_palette() and definition.placement != DecorationDefinition.Placement.RIM and definition.placement != DecorationDefinition.Placement.BAND
 	card.toggle_mode = true
 	card.custom_minimum_size = Vector2(100.0, 96.0)
 	card.tooltip_text = "%s\n%s" % [definition.display_name, definition.description]

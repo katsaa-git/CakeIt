@@ -19,7 +19,7 @@ func _definitions() -> Array[DecorationDefinition]:
 
 func test_definitions_are_valid() -> void:
 	var definitions: Array[DecorationDefinition] = _definitions()
-	check(definitions.size() >= 16, "at least 16 decorations (found %d)" % definitions.size())
+	check(definitions.size() >= 60, "at least 60 decorations (found %d)" % definitions.size())
 	var ids: Dictionary = {}
 	for definition in definitions:
 		var problems: PackedStringArray = definition.validate()
@@ -78,6 +78,66 @@ func test_every_piece_has_sound_geometry() -> void:
 		if not definition.builder.is_unique():
 			var bottom: float = mesh.bounds().position.y
 			check(bottom > -definition.radius() * 0.5, "%s sits on the surface, not inside it (bottom %.3f)" % [definition.id, bottom])
+		# Every shape in a mix is sound too.
+		for variant in range(1, definition.variant_count()):
+			var problems_v: String = geometry_problems(definition.arrays(variant))
+			check(problems_v.is_empty(), "%s shape %d: sound geometry %s" % [definition.id, variant, problems_v])
+
+
+func test_mixes_use_every_shape() -> void:
+	var definition := Content.decoration(&"festive_medley") as DecorationDefinition
+	var seen: Dictionary = {}
+	for s in range(60):
+		seen[definition.variant_for(s * 7919)] = true
+	check(seen.size() == definition.variant_count(), "a medley uses all %d of its shapes (%d)" % [definition.variant_count(), seen.size()])
+
+
+## Words lie flat on top and bend round the side so every letter sits flush.
+func test_letters_bend_round_the_side() -> void:
+	var definition := Content.decoration(&"fondant_letters") as DecorationDefinition
+	var tier := TierData.new()
+	tier.radius = 1.0
+	tier.height = 1.0
+	var on_top := DecorationData.new()
+	on_top.text = "HAPPY"
+	on_top.color = Color.WHITE
+	var flat: AABB = definition.builder.build_unique(on_top, tier).bounds()
+	var on_side := on_top.duplicate_data()
+	# Standing out from the side (+Y = outward), its top pointing up (+Z = up).
+	on_side.transform = Transform3D(Basis(Vector3(0.0, 0.0, 1.0), Vector3(1.0, 0.0, 0.0), Vector3(0.0, 1.0, 0.0)), Vector3(1.0, 0.5, 0.0))
+	var bent: AABB = definition.builder.build_unique(on_side, tier).bounds()
+	check(flat.size.x > 0.5 and flat.position.y > -0.01, "a word lies flat (%.2f wide)" % flat.size.x)
+	check(bent.position.y < -0.02, "on the side it curves back round the cake (%.3f)" % bent.position.y)
+	check(geometry_problems(definition.builder.build_unique(on_side, tier)).is_empty(), "the bent word is sound geometry")
+
+
+## A ribbon at the base stays at the base when the tier gets taller; one in
+## the middle stays in the middle.
+func test_ribbons_keep_their_place_on_resize() -> void:
+	var model := CakeModel.new()
+	model.make_default()
+	var stack := CommandStack.new(model)
+	var tier: TierData = model.tiers[0]
+	var def := Content.decoration(&"satin_ribbon") as DecorationDefinition
+	var base := DecorationData.new()
+	base.id = model.new_id()
+	base.def_id = def.id
+	base.tier_id = tier.id
+	base.transform = Transform3D(Basis.IDENTITY, Vector3(0.0, def.radius(), 0.0))
+	base.path = PackedFloat32Array([0.0, TAU])
+	var middle: DecorationData = base.duplicate_data()
+	middle.id = model.new_id()
+	middle.transform.origin.y = tier.height * 0.5
+	stack.run(AddDecorationsCommand.new([base, middle] as Array[DecorationData]))
+	var before: String = CommandTests.snapshot(model)
+	stack.run(TierCommands.ResizeTier.new(model, tier.id, tier.radius, tier.height * 1.5))
+	var moved: Array[DecorationData] = model.decorations_on(tier.id)
+	check(is_equal_approx(moved[0].transform.origin.y, def.radius()), "the base ribbon stays at the base (%.3f)" % moved[0].transform.origin.y)
+	check(absf(moved[1].transform.origin.y - model.tiers[0].height * 0.5) < 0.001, "the middle ribbon stays in the middle")
+	var ribbon: MeshArrays = def.builder.build_unique(moved[0], model.tiers[0])
+	check(absf(ribbon.bounds().size.x - (model.tiers[0].radius + 0.01) * 2.0) < 0.06, "the ribbon wraps the tier (%.2f)" % ribbon.bounds().size.x)
+	stack.undo()
+	check(CommandTests.snapshot(model) == before, "undo puts both ribbons back")
 
 
 func test_drip_follows_its_tier() -> void:

@@ -48,28 +48,27 @@ class PipeShelf extends HBoxContainer:
 	var _slider: HSlider
 	var _size_label: Label
 	var _updating: bool = false
+	var _strip: CardStrip
+	var _two_tone: Button
+	var _main_slot: SwatchButton
+	var _stripe_slot: SwatchButton
 
 	func setup(new_context: EditorContext) -> void:
 		context = new_context
 		add_theme_constant_override("separation", 14)
-		var tips_box := HBoxContainer.new()
-		tips_box.add_theme_constant_override("separation", 2)
-		# Twenty tips do not fit in one row: they scroll sideways (Shift + wheel
-		# or the scroll bar). Pages or tabs come with the shelf polish.
-		var strip := ScrollContainer.new()
-		strip.custom_minimum_size = Vector2(1000.0, 118.0)
-		strip.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-		strip.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-		strip.add_child(tips_box)
-		add_child(strip)
+		# The tips, a page at a time (arrows, the wheel, or Tab for the next tip).
+		_strip = CardStrip.new(10)
+		add_child(_strip)
 		var group := ButtonGroup.new()
 		for tip in Content.tips():
 			var card := TipCard.make(tip, "\nTab: next tip")
 			card.button_group = group
 			card.color = context.color
 			card.pressed.connect(func() -> void: context.set_tip(tip))
-			tips_box.add_child(card)
+			_strip.add_card(card)
 			_cards[tip.id] = card
+		add_child(Shelves.divider())
+		_add_bag_section()
 		add_child(Shelves.divider())
 		var sizes := Shelves.section("Size")
 		add_child(sizes)
@@ -100,6 +99,43 @@ class PipeShelf extends HBoxContainer:
 		context.color_changed.connect(_on_color)
 		_refresh()
 
+	## The bag: plain or two-tone, and which colour the palette is setting.
+	func _add_bag_section() -> void:
+		var bag := Shelves.section("Bag")
+		add_child(bag)
+		_two_tone = Shelves.pill("Two-tone", "Fill the bag with two colours side by side: stripes, swirls and petals that blush into the second colour")
+		_two_tone.toggle_mode = true
+		_two_tone.toggled.connect(func(on: bool) -> void:
+			if on != context.two_tone:
+				context.set_two_tone(on)
+				context.set_color_slot(1 if on else 0))
+		bag.add_child(_two_tone)
+		var slots := HBoxContainer.new()
+		slots.add_theme_constant_override("separation", 6)
+		bag.add_child(slots)
+		_main_slot = SwatchButton.make(context.color, "Main colour: click, then pick from the palette", 30.0)
+		_main_slot.pressed.connect(func() -> void: context.set_color_slot(0))
+		slots.add_child(_main_slot)
+		_stripe_slot = SwatchButton.make(context.stripe_color, "Stripe colour: click, then pick from the palette", 30.0)
+		_stripe_slot.pressed.connect(func() -> void:
+			if not context.two_tone:
+				context.set_two_tone(true)
+			context.set_color_slot(1))
+		slots.add_child(_stripe_slot)
+		context.stripe_changed.connect(func(_on: bool, _c: Color) -> void: _refresh_bag())
+		context.color_slot_changed.connect(func(_s: int) -> void: _refresh_bag())
+		_refresh_bag()
+
+	func _refresh_bag() -> void:
+		_two_tone.set_pressed_no_signal(context.two_tone)
+		_main_slot.color = context.color
+		_stripe_slot.color = context.stripe_color
+		_stripe_slot.modulate.a = 1.0 if context.two_tone else 0.45
+		_main_slot.selected = context.two_tone and context.color_slot == 0
+		_stripe_slot.selected = context.two_tone and context.color_slot == 1
+		_main_slot.queue_redraw()
+		_stripe_slot.queue_redraw()
+
 	func set_thumbnail(key: Resource, texture: Texture2D) -> void:
 		var tip := key as TipDefinition
 		if tip != null and _cards.has(tip.id):
@@ -108,6 +144,7 @@ class PipeShelf extends HBoxContainer:
 	func _on_color(color: Color) -> void:
 		for card: TipCard in _cards.values():
 			card.color = color
+		_refresh_bag()
 
 	func _on_slider(value: float) -> void:
 		if _updating or context.tip == null:
@@ -121,6 +158,7 @@ class PipeShelf extends HBoxContainer:
 		_updating = true
 		if _cards.has(tip.id):
 			(_cards[tip.id] as TipCard).button_pressed = true
+			_strip.reveal(_cards[tip.id])
 		for i in range(_size_buttons.size()):
 			_size_buttons[i].text = tip.preset_name(i)
 			_size_buttons[i].button_pressed = i == context.size_index
@@ -287,7 +325,7 @@ class DecorationShelf extends HBoxContainer:
 	var context: EditorContext
 	var _tabs: Dictionary = {}
 	var _cards: Dictionary = {}
-	var _items: HBoxContainer
+	var _items: CardStrip
 	var _category: StringName = &""
 	var _size_buttons: Array[Button] = []
 	var _hint: Label
@@ -312,8 +350,8 @@ class DecorationShelf extends HBoxContainer:
 			tab.pressed.connect(func() -> void: _show_category(category))
 			tabs.add_child(tab)
 			_tabs[category] = tab
-		_items = HBoxContainer.new()
-		_items.add_theme_constant_override("separation", 2)
+		_items = CardStrip.new(8)
+
 		left.add_child(_items)
 		var card_group := ButtonGroup.new()
 		for res in Content.decorations():
@@ -322,7 +360,8 @@ class DecorationShelf extends HBoxContainer:
 			card.button_group = card_group
 			card.color = context.color
 			card.pressed.connect(func() -> void: context.set_decoration(definition))
-			_items.add_child(card)
+			card.set_meta("category", definition.category)
+			_items.add_card(card)
 			_cards[definition.id] = card
 		add_child(Shelves.divider())
 		var sizes := Shelves.section("Size")
@@ -340,7 +379,7 @@ class DecorationShelf extends HBoxContainer:
 		_hint.custom_minimum_size = Vector2(230.0, 0.0)
 		_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		sizes.add_child(_hint)
-		_words = Shelves.section("Words on the sign")
+		_words = Shelves.section("Words")
 		_text = LineEdit.new()
 		_text.text = context.decoration_text
 		_text.max_length = 32
@@ -371,9 +410,7 @@ class DecorationShelf extends HBoxContainer:
 	func _show_category(category: StringName) -> void:
 		_category = category
 		(_tabs[category] as Button).button_pressed = true
-		for res in Content.decorations():
-			var definition := res as DecorationDefinition
-			(_cards[definition.id] as Control).visible = definition.category == category
+		_items.set_filter(func(card: Control) -> bool: return card.get_meta("category") == category)
 		var current := context.decoration as DecorationDefinition
 		if current == null or current.category != category:
 			for res in Content.decorations():
@@ -388,6 +425,7 @@ class DecorationShelf extends HBoxContainer:
 		if definition.category != _category:
 			_show_category(definition.category)
 		(_cards[definition.id] as TipCard).button_pressed = true
+		_items.reveal(_cards[definition.id])
 		for i in range(_size_buttons.size()):
 			_size_buttons[i].text = definition.preset_name(i)
 			_size_buttons[i].button_pressed = i == context.decoration_size_index
@@ -398,8 +436,12 @@ class DecorationShelf extends HBoxContainer:
 				_hint.text = "Click for one, drag for a string."
 			DecorationDefinition.Placement.RIM:
 				_hint.text = "Drag along the top edge of a tier. Spin the cake to go all the way round."
+			DecorationDefinition.Placement.BAND:
+				_hint.text = "Drag round the side of a tier, or click to wrap it all the way round."
 			_:
 				_hint.text = "Click to place." + (" Goes on top of a tier." if definition.top_only else "")
-		if not definition.uses_palette():
+		if definition.color_mode == DecorationDefinition.ColorMode.FIXED:
 			_hint.text += " Comes in its own colours."
+		elif definition.color_mode == DecorationDefinition.ColorMode.MIX:
+			_hint.text += " Comes mixed; pick a Mix to change it."
 		_words.visible = definition.uses_text()

@@ -263,5 +263,5 @@ static func side_curve(decoration: DecorationData, tier: TierData) -> float:
 	var basis: Basis = decoration.transform.basis.orthonormalized()
 	if absf(basis.y.y) > 0.5 or absf(basis.z.y) < 0.6:
 		return 0.0
-	var scale: float = maxf(decoration.transform.basis.get_scale().x, 0.001)
+	var scale: float = maxf(absf(decoration.transform.basis.get_scale().x), 0.001)
 	return tier.radius / scale

@@ -47,6 +47,8 @@ func _ready() -> void:
 func _run() -> void:
 	var scenario: String = args.get("scenario", "empty")
 	var context: EditorContext = main.get("context")
+	if args.get("hide_ui", "false") == "true":
+		main.get("hud").call("set_interface_visible", false)
 	match scenario:
 		"showcase":
 			_build_showcase(context)
@@ -175,6 +177,27 @@ func _build_showcase(context: EditorContext) -> void:
 		_add_all(context, DemoCake.side_dots(model, tier, 8, tier.height - 0.2, &"open_star", 1, rose, 1.25))
 	_add_all(context, DemoCake.top_dots(model, top, 7, top.radius * 0.45, &"open_star", 2, rose, 1.2))
 	_add(context, DemoCake.rosette(model, top, Vector3(0.0, top.height, 0.0), &"open_star", 2, cream))
+	# E2: a satin ribbon with a bow round the bottom tier's base, a whisper of
+	# pearl dust over the top tier, and a few sugar peonies on the ledge.
+	var tools: ToolController = main.get("tools")
+	var deco: DecorationTool = tools.tools[&"decorate"]
+	var front: float = _front_angle(context)
+	context.set_color(rose)
+	deco.wrap_ribbon(Content.decoration(&"satin_ribbon_bow"), bottom.id, 0.0, front - 0.5, front - 0.5 + TAU)
+	context.set_color(cream)
+	var ledge: float = (bottom.radius + top.radius) * 0.5
+	for i in range(3):
+		var a: float = front + 0.6 + float(i) * 0.32
+		deco.place_one(Content.decoration(&"peony"), bottom.id, Vector3(cos(a) * ledge, bottom.height, sin(a) * ledge), Vector3.UP)
+	var dust: DustTool = tools.tools[&"dust"]
+	context.set_color(Color(0.97, 0.95, 0.92), 0.5)
+	context.set_dust(2, 0, false)
+	var veil := PackedVector3Array()
+	for k in range(90):
+		var a: float = float(k) / 89.0 * TAU * 2.0
+		veil.append(Vector3(cos(a) * top.radius, top.height * (0.3 + 0.4 * fmod(float(k) / 45.0, 1.0)), sin(a) * top.radius))
+	dust.brush_path(top.id, veil, 0.15)
+	context.set_color(cream)
 
 
 ## A deliberately overloaded cake for performance measurements.
@@ -199,6 +222,13 @@ func _build_heavy(context: EditorContext) -> void:
 		_add_all(context, DemoCake.top_dots(model, tier, 40, tier.radius * 0.85, &"open_star", 1, colors[2]))
 		count += 110
 	print("BENCH built heavy cake: %d strokes" % model.strokes.size())
+	if args.get("dust", "false") == "true":
+		# The worst case for the shimmer shader: every tier dusted all over.
+		for tier in model.tiers:
+			var mask: ShimmerMask = tier.ensure_shimmer()
+			mask.image.fill(Color(0.6, 0.5, 0.3, 0.6))
+			context.view.view_for(tier.id).apply_shimmer(tier)
+		print("BENCH every tier dusted")
 
 
 func _benchmark(context: EditorContext) -> void:
@@ -521,6 +551,7 @@ func _input_test(context: EditorContext) -> void:
 	_expect(model.tiers.size() == 1, "undo add tier")
 	await _input_test_tools(context)
 	await _input_test_decorations(context)
+	await _input_test_e2(context)
 	print("INPUT_TEST %s (%d failures)" % ["PASSED" if _input_failures == 0 else "FAILED", _input_failures])
 
 
@@ -828,7 +859,7 @@ func _build_shimmer(context: EditorContext) -> void:
 	context.commands.run(TierCommands.CoatTier.new(model, bottom.id, Color(0.98, 0.86, 0.87), true, 0.9, false))
 	main.call("add_tier")
 	var top: TierData = model.tiers[1]
-	context.commands.run(TierCommands.CoatTier.new(model, top.id, Color(1.0, 0.97, 0.93), true, 0.9, false))
+	context.commands.run(TierCommands.CoatTier.new(model, top.id, Color(0.97, 0.95, 0.92), true, 0.95, false, 0.5))
 	_add(context, DemoCake.side_ring(model, bottom, 0.06, &"shell", 1, Color(1.0, 0.97, 0.93), 0.0, 0, 1.0))
 	_add(context, DemoCake.top_ring(model, bottom, bottom.radius - 0.07, &"rope", 0, Color(1.0, 0.97, 0.93), 1.03))
 	_add(context, DemoCake.side_ring(model, top, 0.06, &"bead", 0, Color(0.98, 0.86, 0.87), 0.0, 0, 1.0))
@@ -1140,3 +1171,63 @@ func _input_test_decorations(context: EditorContext) -> void:
 	_expect(model.decorations.size() == before, "a candle is not placed on the side of a tier")
 	_send_key(KEY_B, false)
 	await get_tree().process_frame
+
+
+## E2 through real input: a click wraps a ribbon round a tier, the dust
+## brush dusts the side in one undo step, the palette's Metallic tab gives a
+## shiny colour, and a two-tone bag pipes a striped line.
+func _input_test_e2(context: EditorContext) -> void:
+	var model: CakeModel = context.model
+	var tier: TierData = model.tiers[0]
+	var to_window: Transform2D = get_viewport().get_final_transform()
+	context.turntable.stop()
+	# Ribbon: V, pick the satin ribbon, click the side.
+	_send_key(KEY_V, false)
+	await get_tree().process_frame
+	context.set_decoration(Content.decoration(&"satin_ribbon"))
+	var before: int = model.decorations.size()
+	await _click(_front_of(context, tier, 0.5))
+	_expect(model.decorations.size() == before + 1, "a click on the side wraps a ribbon")
+	if model.decorations.size() == before + 1:
+		var ribbon: DecorationData = model.decorations[model.decorations.size() - 1]
+		var span: Vector2 = DripBuilder.span(ribbon.path)
+		_expect(span.y - span.x >= TAU - 0.01, "a click wraps it all the way round (%.2f rad)" % (span.y - span.x))
+	_send_key(KEY_Z, true)
+	await get_tree().process_frame
+	_expect(model.decorations.size() == before, "undo takes the ribbon off")
+	# Palette: the Metallic tab, then its first swatch (gold).
+	var hud: Hud = main.get("hud")
+	var palette: PalettePanel = hud.get_node("Root/Palette")
+	var metallic: Button = palette.get("_tabs")[&"metallic"]
+	await _click(to_window * metallic.get_global_rect().get_center())
+	await get_tree().process_frame
+	var gold: SwatchButton = (palette.get("_grids")[&"metallic"] as GridContainer).get_child(0)
+	await _click(to_window * gold.get_global_rect().get_center())
+	_expect(context.shine > 0.9, "a metallic swatch picks a shiny colour (shine %.2f)" % context.shine)
+	# Dust: L, then brush across the front of the tier.
+	_send_key(KEY_L, false)
+	await get_tree().process_frame
+	_expect(context.tool_id == &"dust", "L picks up the dust brush")
+	var undo_before: int = context.commands.undo_count()
+	var path: Array[Vector2] = []
+	for i in range(40):
+		path.append(_front_of(context, tier, 0.55, -0.35 + float(i) * 0.018))
+	await _drag(path)
+	_expect(model.tier_by_id(tier.id).has_shimmer(), "brushing dusts the tier")
+	_expect(context.commands.undo_count() == undo_before + 1, "one brush stroke is one undo step")
+	_send_key(KEY_Z, true)
+	await get_tree().process_frame
+	_expect(not model.tier_by_id(tier.id).has_shimmer(), "undo brushes the dust away")
+	# Two-tone bag: switch it on, pipe a line, the stroke keeps the stripe.
+	_send_key(KEY_B, false)
+	await get_tree().process_frame
+	context.set_color((Content.palette(&"frosting") as SwatchPalette).colors[3])
+	context.set_two_tone(true)
+	context.set_color_slot(0)
+	var strokes: int = model.strokes.size()
+	var line: Array[Vector2] = []
+	for i in range(30):
+		line.append(_front_of(context, tier, 0.3, -0.3 + float(i) * 0.02))
+	await _drag(line)
+	_expect(model.strokes.size() == strokes + 1 and model.strokes[model.strokes.size() - 1].stripe.a > 0.0, "a two-tone bag pipes a striped line")
+	context.set_two_tone(false)
