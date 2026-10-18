@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/wafer_roll_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+length = 0.7
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"wafer_roll"
+display_name = "Wafer Roll"
+description = "A rolled wafer stick with a chocolate spiral, stood up in the top of a tier."
+category = &"treats"
+sort_order = 4
+tags = PackedStringArray("treat", "wafer", "chocolate")
+align = 1
+top_only = true
+sink = 1.0
+max_tilt = 12.0
+color_mode = 1
+colors = PackedColorArray(1, 1, 1, 1)
+roughness = 0.5

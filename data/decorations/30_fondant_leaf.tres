@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/cutout_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+shape = 6
+size = 0.12
+thickness = 0.016
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"fondant_leaf"
+display_name = "Leaf"
+description = "A fondant leaf with pressed veins, in the picked colour (autumn oranges, spring greens...)."
+category = &"fondant"
+sort_order = 7
+tags = PackedStringArray("fondant", "leaf", "autumn")
+sink = 0.05

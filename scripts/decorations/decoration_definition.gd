@@ -42,8 +42,7 @@ enum Facing {
 	VIEWER,
 }
 
-## Shelf tabs, in order, with their names. ("Treats" and "Ribbons" join
-## once their first items exist; see the handoff notes.)
+## Shelf tabs, in order, with their names.
 const CATEGORIES: Array = [
 	[&"sprinkles", "Sprinkles"],
 	[&"sweets", "Pearls"],
@@ -51,6 +50,8 @@ const CATEGORIES: Array = [
 	[&"fondant", "Fondant"],
 	[&"flowers", "Flowers"],
 	[&"fruit", "Fruit"],
+	[&"treats", "Treats"],
+	[&"ribbons", "Ribbons"],
 	[&"party", "Candles & toppers"],
 ]
 

@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/sprinkle_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+shape = 4
+length = 0.014
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"sanding_sugar"
+display_name = "Sanding Sugar"
+description = "Coarse sparkling sugar crystals. Hold and drag for a frosty, glittering crust in the picked colour."
+category = &"sprinkles"
+sort_order = 8
+tags = PackedStringArray("sprinkles", "sugar", "sparkle")
+placement = 2
+brush_radius = 0.2
+rate = 380.0
+sink = 0.1
+max_tilt = 90.0
+size_jitter = 0.3
+roughness = 0.06
+specular = 0.9
+clearcoat = 1.0
+casts_shadow = false
+size_names = PackedStringArray("Fine", "Coarse", "Chunky")

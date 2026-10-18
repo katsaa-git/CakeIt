@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/sprig_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+kind = 1
+length = 0.4
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"babys_breath"
+display_name = "Baby’s Breath"
+description = "A delicate sprig of tiny white florets: the perfect filler between bigger flowers."
+category = &"flowers"
+sort_order = 8
+tags = PackedStringArray("floral", "filler", "rustic", "wedding")
+max_tilt = 10.0
+sink = 0.05
+color_mode = 2
+colors = PackedColorArray(1, 1, 0.98, 1, 0.98, 0.96, 0.9, 1)
+roughness = 0.6

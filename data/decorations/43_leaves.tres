@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/cutout_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+shape = 6
+size = 0.12
+thickness = 0.01
+fold = 0.3
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"leaves"
+display_name = "Leaves"
+description = "Fresh green sugar leaves, folded a little along the vein. Tuck them round flowers and fruit."
+category = &"flowers"
+sort_order = 9
+tags = PackedStringArray("floral", "leaf", "greenery")
+sink = 0.05
+max_tilt = 12.0
+size_jitter = 0.12
+color_mode = 2
+colors = PackedColorArray(0.42, 0.62, 0.36, 1, 0.5, 0.68, 0.42, 1, 0.36, 0.54, 0.34, 1, 0.56, 0.7, 0.5, 1)
+roughness = 0.45

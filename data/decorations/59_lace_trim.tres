@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/ribbon_builder.gd" id="2_builder"]
+[ext_resource type="Shader" path="res://art/shaders/lace.gdshader" id="3_lace"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+style = 1
+width = 0.22
+thickness = 0.006
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+shader_override = ExtResource("3_lace")
+id = &"lace_trim"
+display_name = "Sugar Lace"
+description = "A band of delicate sugar lace with a scalloped edge. Drag round the side of a tier; a click wraps it all the way."
+category = &"ribbons"
+sort_order = 3
+tags = PackedStringArray("ribbon", "lace", "vintage", "wedding")
+placement = 4
+roughness = 0.55
+size_names = PackedStringArray("Narrow", "Classic", "Wide")

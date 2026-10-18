@@ -5,6 +5,8 @@ extends DecoratingTool
 ##   LINE     click for one, drag for an evenly spaced string (pearls);
 ##   SCATTER  hold and move to spray them round the cursor (sprinkles);
 ##   RIM      drag along a tier's top edge to pour a drip over it (ganache).
+##   BAND     drag round the side of a tier to wrap a ribbon there; a click
+##            wraps it all the way round (snapping to the base or top edge).
 ## A soft ghost shows what will land where before clicking. Everything placed
 ## in one press is a single undo step; while the button is held, pieces show
 ## in a temporary layer and become real on release.
@@ -34,6 +36,9 @@ var _rim_last: float = 0.0
 var _rim_min: float = 0.0
 var _rim_max: float = 0.0
 var _rim_decoration: DecorationData
+var _rim_band: bool = false
+## Height (tier-local) of the plane the drag follows off the tier.
+var _rim_y: float = 0.0
 
 
 func _init() -> void:
@@ -102,7 +107,7 @@ func press(hit: CakePicker.Hit, _screen_position: Vector2) -> bool:
 			# A little burst straight away, so a single click leaves something.
 			_spray = 4.0
 			_spray_some(def, hit)
-		DecorationDefinition.Placement.RIM:
+		DecorationDefinition.Placement.RIM, DecorationDefinition.Placement.BAND:
 			_begin_rim(def, hit)
 	return true
 
@@ -147,7 +152,7 @@ func update(delta: float, hit: CakePicker.Hit, screen_position: Vector2) -> void
 			if hit != null:
 				_spray += def.rate * delta
 				_spray_some(def, hit)
-		DecorationDefinition.Placement.RIM:
+		DecorationDefinition.Placement.RIM, DecorationDefinition.Placement.BAND:
 			_update_rim(hit, screen_position)
 
 
@@ -200,7 +205,8 @@ func _place(def: DecorationDefinition, tier_id: int, local_position: Vector3, no
 	decoration.tier_id = tier_id
 	var sink: float = def.sink * def.radius() * basis.get_scale().y
 	decoration.transform = Transform3D(basis, local_position - normal.normalized() * sink)
-	decoration.color = def.pick_color(context.color, _rng)
+	decoration.color = _piece_color(def)
+	decoration.shine = _piece_shine(def)
 	decoration.rng_seed = _rng.randi()
 	if def.uses_text():
 		decoration.text = context.decoration_text
@@ -238,23 +244,44 @@ func _preview_layer(tier_id: int) -> DecorationLayer:
 	return layer
 
 
-# --- Drips along the rim -------------------------------------------------------
+# --- Drips along the rim, ribbons round the side ---------------------------------
 
+## Starts a drag round a tier: along its top edge for a drip (RIM), or round
+## its side at the pressed height for a ribbon (BAND).
 func _begin_rim(def: DecorationDefinition, hit: CakePicker.Hit) -> void:
-	if hit.tier_id == CakeModel.BOARD_ID:
-		context.toast("Drag along the top edge of a tier to pour a drip")
+	var band: bool = def.placement == DecorationDefinition.Placement.BAND
+	if hit.tier_id == CakeModel.BOARD_ID or (band and hit.cake_normal.y > 0.6):
+		context.toast("Drag round the side of a tier to wrap it" if band else "Drag along the top edge of a tier to pour a drip")
 		return
+	var tier: TierData = context.model.tier_by_id(hit.tier_id)
+	_rim_band = band
 	_rim_tier = hit.tier_id
 	_rim_last = atan2(hit.local_position.z, hit.local_position.x)
 	_rim_min = _rim_last
 	_rim_max = _rim_last
+	_rim_y = tier.height
 	_rim_decoration = DecorationData.new()
 	_rim_decoration.id = context.model.new_id()
 	_rim_decoration.def_id = def.id
 	_rim_decoration.tier_id = _rim_tier
-	_rim_decoration.color = def.pick_color(context.color, _rng)
+	_rim_decoration.color = _piece_color(def)
+	_rim_decoration.shine = _piece_shine(def)
 	_rim_decoration.rng_seed = _rng.randi()
+	if band:
+		_rim_y = band_height(def, tier, hit.local_position.y)
+		_rim_decoration.transform = Transform3D(Basis.IDENTITY.scaled(Vector3.ONE * _size_scale(def)), Vector3(0.0, _rim_y, 0.0))
 	_show_rim()
+
+
+## Where a ribbon pressed at height `y` goes: snapped down onto the base or
+## up to the top edge when close, otherwise right there.
+func band_height(def: DecorationDefinition, tier: TierData, y: float) -> float:
+	var half: float = def.radius() * _size_scale(def)
+	if y < half * 2.4:
+		return half
+	if y > tier.height - half * 2.0:
+		return tier.height - half
+	return y
 
 
 func _update_rim(hit: CakePicker.Hit, screen_position: Vector2) -> void:
@@ -267,9 +294,10 @@ func _update_rim(hit: CakePicker.Hit, screen_position: Vector2) -> void:
 	if hit != null and hit.tier_id == _rim_tier:
 		local = hit.local_position
 	else:
-		# Off the tier: follow the cursor round on the plane of its top.
+		# Off the tier: follow the cursor round on the plane of the top (or of
+		# the ribbon).
 		var base: float = context.model.tier_base_y(_rim_tier)
-		var point: Variant = context.picker.plane_point(screen_position, base + tier.height)
+		var point: Variant = context.picker.plane_point(screen_position, base + _rim_y)
 		if point != null:
 			local = (point as Vector3) - Vector3(0.0, base, 0.0)
 	if local == null:
@@ -288,8 +316,14 @@ func _show_rim() -> void:
 	layer.remove(_rim_decoration)
 	var start: float = _rim_min
 	var end: float = minf(_rim_max, _rim_min + TAU)
-	# A click (or a tiny drag) still pours a short drip.
-	if end - start < 0.5:
+	if _rim_band:
+		# A click (or a tiny drag) wraps the ribbon all the way round, starting
+		# (and tying its bow) where it was pressed.
+		if end - start < 0.3:
+			start = _rim_last
+			end = start + TAU
+	elif end - start < 0.5:
+		# A click (or a tiny drag) still pours a short drip.
 		var middle: float = (start + end) * 0.5
 		start = middle - 0.3
 		end = middle + 0.3
@@ -303,12 +337,23 @@ func _finish_rim() -> void:
 	_rim_decoration = null
 
 
+## The colour for a new piece: the picked colour, a random one of the picked
+## mix, or the decoration's own.
+func _piece_color(def: DecorationDefinition) -> Color:
+	return def.pick_color(context.color, _rng, context.mix if def.takes_mix() else PackedColorArray())
+
+
+## Pieces in the picked colour take its finish (gold, pearl...).
+func _piece_shine(def: DecorationDefinition) -> float:
+	return context.shine if def.uses_palette() and context.mix.is_empty() else 0.0
+
+
 # --- Cursor --------------------------------------------------------------------
 
 func _refresh_ghost() -> void:
 	var def: DecorationDefinition = definition()
 	_ghost_definition = def
-	if def == null or def.placement == DecorationDefinition.Placement.SCATTER or def.placement == DecorationDefinition.Placement.RIM:
+	if def == null or def.placement == DecorationDefinition.Placement.SCATTER or def.placement == DecorationDefinition.Placement.RIM or def.placement == DecorationDefinition.Placement.BAND:
 		_ghost.mesh = null
 		return
 	_ghost.mesh = def.mesh()
@@ -324,7 +369,7 @@ func _show_cursor(def: DecorationDefinition, hit: CakePicker.Hit) -> void:
 		return
 	var spin: Basis = context.picker.spin_root.global_basis
 	var scatter: bool = def.placement == DecorationDefinition.Placement.SCATTER
-	var rim: bool = def.placement == DecorationDefinition.Placement.RIM
+	var rim: bool = def.placement == DecorationDefinition.Placement.RIM or def.placement == DecorationDefinition.Placement.BAND
 	if scatter or rim:
 		# A ring on the surface: the spray area, or where the drip will pour.
 		_ghost.visible = false
@@ -384,8 +429,27 @@ func pour_drip(def: DecorationDefinition, tier_id: int, start: float, end: float
 	decoration.id = context.model.new_id()
 	decoration.def_id = def.id
 	decoration.tier_id = tier_id
-	decoration.color = def.pick_color(context.color, _rng)
+	decoration.color = _piece_color(def)
+	decoration.shine = _piece_shine(def)
 	decoration.rng_seed = _rng.randi()
 	decoration.path = PackedFloat32Array([start, end])
+	context.commands.run(AddDecorationsCommand.new([decoration] as Array[DecorationData], def.display_name))
+	context.view.flush_decorations()
+
+
+## Wraps a ribbon round a tier at height `y` (snapped like a press there)
+## from one angle to another; `end - start` of TAU or more goes all round.
+func wrap_ribbon(def: DecorationDefinition, tier_id: int, y: float, start: float, end: float) -> void:
+	context.set_decoration(def)
+	var tier: TierData = context.model.tier_by_id(tier_id)
+	var decoration := DecorationData.new()
+	decoration.id = context.model.new_id()
+	decoration.def_id = def.id
+	decoration.tier_id = tier_id
+	decoration.color = _piece_color(def)
+	decoration.shine = _piece_shine(def)
+	decoration.rng_seed = _rng.randi()
+	decoration.transform = Transform3D(Basis.IDENTITY.scaled(Vector3.ONE * _size_scale(def)), Vector3(0.0, band_height(def, tier, y), 0.0))
+	decoration.path = PackedFloat32Array([start, minf(end, start + TAU)])
 	context.commands.run(AddDecorationsCommand.new([decoration] as Array[DecorationData], def.display_name))
 	context.view.flush_decorations()

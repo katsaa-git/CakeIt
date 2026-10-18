@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/donut_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+size = 0.36
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"mini_donut"
+display_name = "Mini Donut"
+description = "A tiny donut with a glossy glaze in the picked colour and rainbow sprinkles."
+category = &"treats"
+sort_order = 3
+tags = PackedStringArray("treat", "donut", "playful")
+sink = 0.05
+max_tilt = 15.0
+roughness = 0.3
+clearcoat = 0.5

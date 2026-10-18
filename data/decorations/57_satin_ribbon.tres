@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/ribbon_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+style = 0
+width = 0.2
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"satin_ribbon"
+display_name = "Satin Ribbon"
+description = "Drag round the side of a tier to wrap a satin ribbon there; a click wraps it all the way round. Near the bottom it snaps to the base."
+category = &"ribbons"
+sort_order = 1
+tags = PackedStringArray("ribbon", "satin", "elegant")
+placement = 4
+roughness = 0.3
+specular = 0.65
+sheen = 0.3
+size_names = PackedStringArray("Narrow", "Classic", "Wide")

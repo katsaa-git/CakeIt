@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/cutout_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+shape = 1
+size = 0.03
+thickness = 0.009
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"star_sprinkles"
+display_name = "Star Sprinkles"
+description = "Little sugar stars in sunny pastels. Hold and drag to sprinkle."
+category = &"sprinkles"
+sort_order = 5
+tags = PackedStringArray("sprinkles", "star", "colourful")
+placement = 2
+brush_radius = 0.2
+rate = 60.0
+sink = 0.1
+max_tilt = 20.0
+color_mode = 2
+colors = PackedColorArray(0.99, 0.86, 0.42, 1, 1, 0.97, 0.92, 1, 0.62, 0.8, 0.96, 1, 0.97, 0.7, 0.78, 1, 0.74, 0.88, 0.7, 1)
+roughness = 0.38
+clearcoat = 0.3
+casts_shadow = false

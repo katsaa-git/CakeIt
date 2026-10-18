@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/slice_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+style = 0
+size = 0.26
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"orange_slice"
+display_name = "Orange Slice"
+description = "A thin, juicy slice of orange laid flat."
+category = &"fruit"
+sort_order = 7
+tags = PackedStringArray("fruit", "citrus", "fresh")
+sink = 0.05
+max_tilt = 6.0
+color_mode = 1
+colors = PackedColorArray(1, 1, 1, 1)
+roughness = 0.3
+clearcoat = 0.5
+subsurface = 0.25

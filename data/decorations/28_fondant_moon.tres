@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/cutout_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+shape = 4
+size = 0.13
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"fondant_moon"
+display_name = "Moon"
+description = "A crescent moon cut from fondant. Lovely with stars for a sleepy night-sky cake."
+category = &"fondant"
+sort_order = 5
+tags = PackedStringArray("fondant", "moon", "night")
+facing = 1
+sink = 0.05

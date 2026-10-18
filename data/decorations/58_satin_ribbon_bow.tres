@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/ribbon_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+style = 0
+width = 0.2
+bow = true
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"satin_ribbon_bow"
+display_name = "Ribbon & Bow"
+description = "A satin ribbon finished with a bow where you start dragging (or where you click)."
+category = &"ribbons"
+sort_order = 2
+tags = PackedStringArray("ribbon", "satin", "bow", "gift")
+placement = 4
+roughness = 0.3
+specular = 0.65
+sheen = 0.3
+size_names = PackedStringArray("Narrow", "Classic", "Wide")

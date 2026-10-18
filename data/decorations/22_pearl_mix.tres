@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/pearl_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+size = 0.02
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"pearl_mix"
+display_name = "Pearl Mix"
+description = "Sugar pearls in mixed sizes and soft shades. Hold and drag to scatter a pearly drift."
+category = &"sprinkles"
+sort_order = 7
+tags = PackedStringArray("sprinkles", "pearl", "elegant")
+placement = 2
+brush_radius = 0.2
+rate = 28.0
+sink = 0.2
+size_jitter = 0.55
+color_mode = 2
+colors = PackedColorArray(1, 0.99, 0.96, 1, 0.98, 0.94, 0.86, 1, 0.98, 0.86, 0.86, 1, 0.94, 0.88, 0.76, 1)
+roughness = 0.25
+clearcoat = 0.4
+pearl = 1.0
+casts_shadow = false

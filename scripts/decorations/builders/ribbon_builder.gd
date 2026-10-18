@@ -75,7 +75,7 @@ func build_unique(decoration: DecorationData, tier: TierData) -> MeshArrays:
 	if bow:
 		var a: float = angles.x
 		var outward := Vector3(cos(a), 0.0, sin(a))
-		var basis := Basis(outward.cross(Vector3.UP).normalized() * -1.0, outward, Vector3.UP)
+		var basis := Basis(outward.cross(Vector3.UP).normalized(), outward, Vector3.UP)
 		var knot: MeshArrays = BowBuilder.make(w * 2.6, w * 0.85, thickness, color)
 		add_transformed(out, knot, Transform3D(basis, outward * (r + thickness * 0.5) + Vector3(0.0, y - w * 0.15, 0.0)))
 	return out

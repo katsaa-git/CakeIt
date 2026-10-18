@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/sprig_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+kind = 0
+length = 0.45
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"lavender"
+display_name = "Lavender"
+description = "A sprig of sugar lavender lying on the cake. Click to place; it lies the way you look."
+category = &"flowers"
+sort_order = 7
+tags = PackedStringArray("floral", "lavender", "rustic")
+facing = 1
+sink = 0.05
+color_mode = 2
+colors = PackedColorArray(0.66, 0.56, 0.86, 1, 0.58, 0.48, 0.8, 1, 0.72, 0.62, 0.9, 1)
+roughness = 0.6

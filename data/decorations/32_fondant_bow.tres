@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/bow_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+span = 0.42
+band = 0.1
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"fondant_bow"
+display_name = "Bow"
+description = "A fondant bow with plump loops and trailing tails. Click to place; it faces up the screen."
+category = &"fondant"
+sort_order = 9
+tags = PackedStringArray("fondant", "bow", "gift")
+facing = 1
+sink = 0.05
+roughness = 0.4

@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/figure_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+kind = 1
+size = 0.3
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"sugar_bee"
+display_name = "Bee"
+description = "A plump, striped sugar bee with milky wings, buzzing about on top of the cake."
+category = &"fondant"
+sort_order = 12
+tags = PackedStringArray("fondant", "figure", "bee", "garden")
+align = 1
+facing = 1
+top_only = true
+sink = 0.05
+color_mode = 1
+colors = PackedColorArray(1, 1, 1, 1)
+roughness = 0.45

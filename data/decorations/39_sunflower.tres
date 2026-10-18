@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/daisy_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+petals = 18
+petal_length = 0.1
+petal_width = 0.32
+rows = 2
+pointed = true
+center_color = Color(0.42, 0.26, 0.12, 1)
+center_size = 0.6
+seed_head = true
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"sunflower"
+display_name = "Sunflower"
+description = "A cheerful sugar sunflower with two rows of golden petals round a dark seed head."
+category = &"flowers"
+sort_order = 5
+tags = PackedStringArray("floral", "flower", "summer", "sunflower")
+sink = 0.05
+max_tilt = 8.0
+color_mode = 1
+colors = PackedColorArray(1, 0.8, 0.2, 1)
+roughness = 0.5

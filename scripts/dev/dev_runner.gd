@@ -50,6 +50,8 @@ func _run() -> void:
 	match scenario:
 		"showcase":
 			_build_showcase(context)
+		"gallery":
+			_build_gallery(context)
 		"weave":
 			_build_weave(context)
 		"tips":
@@ -745,6 +747,69 @@ func _set_sweep(context: EditorContext) -> void:
 			var r: Dictionary = await _measure(context, 1.5, func(_t: float) -> void: pass)
 			(part[1] as Callable).call(true)
 			print("SET   without %-24s GPU %.2f ms  (saves %.2f)  draw calls %d" % [part[0], r["gpu_ms"], base["gpu_ms"] - r["gpu_ms"], r["draw_calls"]])
+
+
+## One shelf tab's decorations laid out on a plain cake for close-up
+## judging: a grid on top (sprays as small drifts, strings as three in a
+## row), ribbons round the side, and word pieces also on the side to show
+## them bending. `--tab=fruit` picks the tab.
+func _build_gallery(context: EditorContext) -> void:
+	var model: CakeModel = context.model
+	var tool: DecorationTool = (main.get("tools") as ToolController).tools[&"decorate"]
+	var tier: TierData = model.tiers[0]
+	context.commands.run(TierCommands.ResizeTier.new(model, tier.id, 1.6, 1.05))
+	tier = model.tiers[0]
+	context.commands.run(TierCommands.CoatTier.new(model, tier.id, Color(0.99, 0.95, 0.88), true, 0.95, false))
+	var tab := StringName(args.get("tab", "fruit"))
+	var defs: Array[DecorationDefinition] = []
+	for res in Content.decorations():
+		if (res as DecorationDefinition).category == tab:
+			defs.append(res)
+	var palette: Array[Color] = [Color(0.97, 0.72, 0.78), Color(0.72, 0.86, 0.78), Color(0.99, 0.84, 0.62), Color(0.74, 0.8, 0.95), Color(0.85, 0.74, 0.93), Color(0.93, 0.4, 0.45)]
+	var on_top: Array[DecorationDefinition] = []
+	var band_y: float = 0.08
+	for def in defs:
+		if def.placement == DecorationDefinition.Placement.BAND:
+			context.set_color(palette[on_top.size() % palette.size()])
+			tool.wrap_ribbon(def, tier.id, band_y, _front_angle(context) - 1.2, _front_angle(context) - 1.2 + TAU)
+			band_y += 0.36
+		elif def.placement == DecorationDefinition.Placement.RIM:
+			tool.pour_drip(def, tier.id, 0.0, TAU)
+		else:
+			on_top.append(def)
+	var columns: int = ceili(sqrt(float(on_top.size())))
+	var rows: int = ceili(float(on_top.size()) / float(maxi(columns, 1)))
+	var step: float = minf(2.1 / float(maxi(columns, 1)), 0.75)
+	var front: float = _front_angle(context)
+	# Grid axes on the top, lined up with the camera.
+	var right := Vector3(cos(front + PI * 0.5), 0.0, sin(front + PI * 0.5))
+	var toward := Vector3(cos(front), 0.0, sin(front))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 3
+	for i in range(on_top.size()):
+		var def: DecorationDefinition = on_top[i]
+		context.set_color(palette[i % palette.size()])
+		context.decoration_text = "LOVE" if def.builder is LetterBuilder else "Happy Days"
+		var cell := Vector2(float(i % columns) - float(columns - 1) * 0.5, float(i / columns) - float(rows - 1) * 0.5) * step
+		var spot: Vector3 = right * cell.x - toward * cell.y + Vector3(0.0, tier.height, 0.0)
+		match def.placement:
+			DecorationDefinition.Placement.SCATTER:
+				for k in range(int(clampf(def.rate * 0.35, 8.0, 70.0))):
+					var a: float = rng.randf() * TAU
+					var d: float = sqrt(rng.randf()) * step * 0.32
+					tool.place_one(def, tier.id, spot + Vector3(cos(a) * d, 0.0, sin(a) * d), Vector3.UP)
+			DecorationDefinition.Placement.LINE:
+				for k in range(3):
+					tool.place_one(def, tier.id, spot + right * (float(k) - 1.0) * def.radius() * def.spacing, Vector3.UP)
+			_:
+				tool.place_one(def, tier.id, spot, Vector3.UP)
+		if def.uses_text() or (def.category == &"fondant" and not def.top_only and i % 2 == 0):
+			# Also on the side, facing the camera, to show it hugging the curve.
+			var a: float = front + (float(i % 5) - 2.0) * 0.32
+			var n := Vector3(cos(a), 0.0, sin(a))
+			tool.place_one(def, tier.id, n * tier.radius + Vector3(0.0, tier.height * (0.5 if def.uses_text() else 0.3), 0.0), n)
+	context.set_color(Color(1.0, 0.97, 0.92))
+	print("GALLERY %s: %d decorations" % [tab, defs.size()])
 
 
 ## A basket cake: the whole side woven with the serrated basketweave tip

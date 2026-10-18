@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/bunting_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+width = 0.66
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"bunting_topper"
+display_name = "Bunting"
+description = "A little bunting topper on two sticks: flags in the picked colour and cream. Click on top of a tier."
+category = &"party"
+sort_order = 3
+tags = PackedStringArray("topper", "bunting", "party")
+align = 1
+facing = 1
+top_only = true
+sink = 0.3
+roughness = 0.6

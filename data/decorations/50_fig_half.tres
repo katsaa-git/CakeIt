@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/fruit_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+kind = 2
+size = 0.34
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"fig_half"
+display_name = "Halved Fig"
+description = "A fig cut in half: deep purple skin round a jammy, seedy pink middle."
+category = &"fruit"
+sort_order = 10
+tags = PackedStringArray("fruit", "fig", "autumn", "elegant")
+facing = 1
+sink = 0.05
+color_mode = 1
+colors = PackedColorArray(0.38, 0.17, 0.3, 1)
+roughness = 0.35
+clearcoat = 0.3
+subsurface = 0.15

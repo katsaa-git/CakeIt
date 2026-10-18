@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/plaque_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+width = 0.8
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"fondant_plaque"
+display_name = "Plaque"
+description = "A scalloped fondant plaque carrying your words. Type them below, then click to place."
+category = &"fondant"
+sort_order = 10
+tags = PackedStringArray("fondant", "plaque", "words")
+facing = 1
+sink = 0.01

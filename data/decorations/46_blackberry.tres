@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/berry_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+kind = 2
+size = 0.2
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"blackberry"
+display_name = "Blackberry"
+description = "A glossy, inky blackberry."
+category = &"fruit"
+sort_order = 6
+tags = PackedStringArray("fruit", "berry", "fresh", "autumn")
+sink = 0.05
+max_tilt = 12.0
+color_mode = 1
+colors = PackedColorArray(0.2, 0.09, 0.17, 1)
+roughness = 0.2
+clearcoat = 0.7
+subsurface = 0.1

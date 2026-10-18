@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/macaron_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+size = 0.34
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"macaron"
+display_name = "Macaron"
+description = "A French macaron with ruffled feet and a creamy filling, in the picked colour. Click to place."
+category = &"treats"
+sort_order = 1
+tags = PackedStringArray("treat", "macaron", "french", "pastel")
+sink = 0.05
+max_tilt = 15.0
+roughness = 0.55
+subsurface = 0.08

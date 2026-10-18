@@ -1,0 +1,45 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/sprinkle_builder.gd" id="2_builder"]
+[ext_resource type="Script" path="res://scripts/decorations/decoration_builder.gd" id="3_base"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/cutout_builder.gd" id="4_cutout"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+shape = 0
+length = 0.06
+thickness = 0.016
+
+[sub_resource type="Resource" id="Star"]
+script = ExtResource("4_cutout")
+shape = 1
+size = 0.03
+thickness = 0.009
+
+[sub_resource type="Resource" id="Ball"]
+script = ExtResource("2_builder")
+shape = 2
+length = 0.028
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+variants = Array[ExtResource("3_base")]([SubResource("Star"), SubResource("Ball")])
+id = &"festive_medley"
+display_name = "Festive Medley"
+description = "A holiday sprinkle medley of jimmies, little stars and nonpareils in red, green, white and gold. Hold and drag to sprinkle."
+category = &"sprinkles"
+sort_order = 9
+tags = PackedStringArray("sprinkles", "medley", "christmas", "seasonal")
+placement = 2
+brush_radius = 0.2
+rate = 120.0
+sink = 0.12
+max_tilt = 18.0
+color_mode = 2
+colors = PackedColorArray(0.82, 0.14, 0.18, 1, 0.2, 0.52, 0.3, 1, 1, 0.98, 0.95, 1, 0.95, 0.78, 0.38, 1)
+roughness = 0.35
+clearcoat = 0.3
+casts_shadow = false
+size_names = PackedStringArray("Fine", "Classic", "Chunky")

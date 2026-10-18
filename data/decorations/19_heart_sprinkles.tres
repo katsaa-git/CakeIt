@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/cutout_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+shape = 0
+size = 0.028
+thickness = 0.009
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"heart_sprinkles"
+display_name = "Heart Sprinkles"
+description = "Tiny sugar hearts. Hold and drag to shower them over the cake; pick a colour mix for your own blend."
+category = &"sprinkles"
+sort_order = 4
+tags = PackedStringArray("sprinkles", "heart", "romantic")
+placement = 2
+brush_radius = 0.2
+rate = 70.0
+sink = 0.1
+max_tilt = 20.0
+color_mode = 2
+colors = PackedColorArray(0.95, 0.45, 0.58, 1, 0.98, 0.72, 0.78, 1, 0.82, 0.16, 0.28, 1, 1, 0.97, 0.95, 1)
+roughness = 0.38
+clearcoat = 0.3
+casts_shadow = false

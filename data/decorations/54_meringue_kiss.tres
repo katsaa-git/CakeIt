@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/meringue_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+size = 0.26
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"meringue_kiss"
+display_name = "Meringue Kiss"
+description = "A crisp little meringue kiss with a curled peak. Click for one, drag for a row."
+category = &"treats"
+sort_order = 2
+tags = PackedStringArray("treat", "meringue")
+placement = 1
+spacing = 2.2
+sink = 0.05
+max_tilt = 6.0
+roughness = 0.72
+specular = 0.35

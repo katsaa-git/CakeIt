@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/slice_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+style = 1
+size = 0.22
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"kiwi_slice"
+display_name = "Kiwi Slice"
+description = "A slice of kiwi: green flesh, a pale heart and a ring of tiny black seeds."
+category = &"fruit"
+sort_order = 9
+tags = PackedStringArray("fruit", "kiwi", "fresh")
+sink = 0.05
+max_tilt = 6.0
+color_mode = 1
+colors = PackedColorArray(1, 1, 1, 1)
+roughness = 0.3
+clearcoat = 0.4
+subsurface = 0.2

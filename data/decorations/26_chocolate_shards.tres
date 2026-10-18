@@ -1,0 +1,44 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/shard_builder.gd" id="2_builder"]
+[ext_resource type="Script" path="res://scripts/decorations/decoration_builder.gd" id="3_base"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+height = 0.5
+width = 0.3
+shape_seed = 1
+
+[sub_resource type="Resource" id="Tall"]
+script = ExtResource("2_builder")
+height = 0.62
+width = 0.26
+shape_seed = 7
+
+[sub_resource type="Resource" id="Wide"]
+script = ExtResource("2_builder")
+height = 0.4
+width = 0.36
+shape_seed = 13
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+variants = Array[ExtResource("3_base")]([SubResource("Tall"), SubResource("Wide")])
+id = &"chocolate_shards"
+display_name = "Chocolate Shards"
+description = "Jagged shards of tempered chocolate stood up in the top of a tier: dark, milk and white. Click to place each one."
+category = &"chocolate"
+sort_order = 3
+tags = PackedStringArray("chocolate", "shard", "modern")
+align = 1
+top_only = true
+sink = 0.4
+max_tilt = 18.0
+size_jitter = 0.15
+color_mode = 2
+colors = PackedColorArray(0.24, 0.13, 0.08, 1, 0.45, 0.28, 0.17, 1, 0.98, 0.94, 0.86, 1)
+roughness = 0.25
+specular = 0.6
+clearcoat = 0.3

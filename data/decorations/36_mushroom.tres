@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/figure_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+kind = 2
+size = 0.34
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"sugar_mushroom"
+display_name = "Toadstool"
+description = "A sugar toadstool with white spots. The cap takes the picked colour (red is classic)."
+category = &"fondant"
+sort_order = 13
+tags = PackedStringArray("fondant", "figure", "mushroom", "woodland")
+align = 1
+facing = 1
+top_only = true
+sink = 0.05
+roughness = 0.5

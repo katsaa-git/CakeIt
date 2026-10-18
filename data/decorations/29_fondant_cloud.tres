@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/cutout_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+shape = 5
+size = 0.15
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"fondant_cloud"
+display_name = "Cloud"
+description = "A puffy fondant cloud for sky-blue cakes."
+category = &"fondant"
+sort_order = 6
+tags = PackedStringArray("fondant", "cloud", "sky")
+facing = 1
+sink = 0.05

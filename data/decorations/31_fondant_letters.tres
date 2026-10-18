@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/letter_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+letter_height = 0.24
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"fondant_letters"
+display_name = "Letters"
+description = "Fondant letters and numbers: type a word or an age below, then click to place it. On the side of a tier it bends round the cake."
+category = &"fondant"
+sort_order = 8
+tags = PackedStringArray("fondant", "letters", "numbers", "words")
+facing = 1
+sink = 0.05

@@ -206,7 +206,16 @@ static func extrude(outline: PackedVector2Array, thickness: float, color: Color,
 	var face := PackedVector2Array()
 	for k in range(count):
 		face.append(outline[k] + inward[k] * bevel)
-	var triangles: PackedInt32Array = Geometry2D.triangulate_polygon(face)
+	# Triangulate the outline itself (always a clean polygon) and use those
+	# triangles on the inset points; insetting can fold sharp tips (a heart's
+	# cusp) over themselves, which triangulation would refuse.
+	var triangles: PackedInt32Array = Geometry2D.triangulate_polygon(outline)
+	if triangles.is_empty():
+		triangles = Geometry2D.triangulate_polygon(face)
+	if triangles.is_empty():
+		# Last resort: a fan from the first point.
+		for k in range(1, count - 1):
+			triangles.append_array(PackedInt32Array([0, k, k + 1]))
 	var top: int = out.vertex_count()
 	for k in range(count):
 		out.add_vertex(Vector3(face[k].x, thickness, face[k].y), Vector3.UP, color, Vector2(float(k) / float(count), 1.0))

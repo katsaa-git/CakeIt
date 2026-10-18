@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/fruit_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+kind = 0
+size = 0.3
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"strawberry"
+display_name = "Strawberry"
+description = "A whole ripe strawberry standing on its green hull."
+category = &"fruit"
+sort_order = 4
+tags = PackedStringArray("fruit", "berry", "fresh", "summer")
+sink = 0.05
+max_tilt = 8.0
+color_mode = 1
+colors = PackedColorArray(0.86, 0.12, 0.16, 1)
+roughness = 0.3
+clearcoat = 0.4
+subsurface = 0.15

@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="DecorationDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/decorations/decoration_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/decorations/builders/figure_builder.gd" id="2_builder"]
+
+[sub_resource type="Resource" id="Builder"]
+script = ExtResource("2_builder")
+kind = 0
+size = 0.4
+
+[resource]
+script = ExtResource("1_def")
+builder = SubResource("Builder")
+id = &"sugar_bunny"
+display_name = "Bunny"
+description = "A little modelled sugar bunny with long ears. It sits on top of a tier and looks at you."
+category = &"fondant"
+sort_order = 11
+tags = PackedStringArray("fondant", "figure", "animal", "easter")
+align = 1
+facing = 1
+top_only = true
+sink = 0.05
+roughness = 0.6
+subsurface = 0.1
