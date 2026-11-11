@@ -26,6 +26,8 @@ class Group:
 	var node: MultiMeshInstance3D
 	## decoration id -> DecorationData
 	var items: Dictionary = {}
+	## decoration id -> its instance index in the MultiMesh (for pops)
+	var index: Dictionary = {}
 	var dirty: bool = false
 
 
@@ -42,6 +44,14 @@ var _flames_dirty: bool = false
 var _light: OmniLight3D
 var _light_energy: float = 0.0
 var _time: float = 0.0
+## New pieces pop in with a little spring (set on the placing preview, so
+## undo, redo and loading never pop).
+var pop_new: bool = false
+## decoration id -> seconds since it was placed
+var _pops: Dictionary = {}
+
+## How long a pop lasts, in seconds.
+const POP_TIME: float = 0.42
 
 
 func setup(new_tier_id: int, new_model: CakeModel, new_materials: TierMaterials = null) -> void:
@@ -58,15 +68,22 @@ func add(decoration: DecorationData) -> void:
 		return
 	if definition.is_unique():
 		_add_unique(definition, decoration)
+		if pop_new and definition.builder != null and definition.placement != DecorationDefinition.Placement.BAND and definition.placement != DecorationDefinition.Placement.RIM:
+			_pops[decoration.id] = 0.0
+			_apply_pop(decoration.id, 0.0)
 	else:
 		var group: Group = _group(definition, definition.variant_for(decoration.rng_seed))
 		group.items[decoration.id] = decoration
 		group.dirty = true
+		if pop_new and definition.placement != DecorationDefinition.Placement.SCATTER:
+			_pops[decoration.id] = 0.0
+			_apply_pop(decoration.id, 0.0)
 	if _has_flame(definition):
 		_flames_dirty = true
 
 
 func remove(decoration: DecorationData) -> void:
+	_pops.erase(decoration.id)
 	var node: Node3D = _unique.get(decoration.id)
 	if node != null:
 		_unique.erase(decoration.id)
@@ -110,10 +127,72 @@ func flush() -> void:
 
 func _process(delta: float) -> void:
 	flush()
+	if not _pops.is_empty():
+		_update_pops(delta)
 	if _light != null and _light.visible:
 		_time += delta
 		var flicker: float = 0.88 + 0.07 * sin(_time * 11.0) + 0.05 * sin(_time * 17.3 + 1.1)
 		_light.light_energy = _light_energy * flicker
+
+
+## How big a piece is `t` seconds after landing: from half size up past full
+## and gently back, like something soft set down with a little bounce.
+static func pop_scale(t: float) -> float:
+	if t >= POP_TIME:
+		return 1.0
+	return 1.0 - 0.5 * exp(-11.0 * t) * cos(t * 19.0)
+
+
+## `transform` scaled about its own origin for a pop at time `t`.
+static func popped(transform: Transform3D, t: float) -> Transform3D:
+	return Transform3D(transform.basis * pop_scale(t), transform.origin)
+
+
+func _update_pops(delta: float) -> void:
+	for id: int in _pops.keys():
+		var t: float = float(_pops[id]) + delta
+		if t >= POP_TIME:
+			_pops.erase(id)
+		else:
+			_pops[id] = t
+		_apply_pop(id, t)
+
+
+func _apply_pop(id: int, t: float) -> void:
+	var node: Node3D = _unique.get(id)
+	if node != null:
+		var decoration: DecorationData = node.get_meta("decoration")
+		var definition := Content.decoration(decoration.def_id) as DecorationDefinition
+		var rest: Transform3D = definition.builder.piece_transform(decoration) if definition.builder != null else decoration.transform
+		node.transform = popped(rest, t)
+		return
+	for group: Group in _groups.values():
+		if group.index.has(id):
+			var piece: DecorationData = group.items[id]
+			group.node.multimesh.set_instance_transform(group.index[id], popped(piece.transform, t))
+			return
+
+
+## Pops still running here (id -> seconds since landing), to hand over to
+## the tier's own layer when a press ends.
+func running_pops() -> Dictionary:
+	return _pops.duplicate()
+
+
+## Carries on pops that started in the placing preview, so a piece does not
+## jump to full size when the press ends.
+func continue_pops(pops: Dictionary) -> void:
+	for id: int in pops:
+		if _unique.has(id) or _has_item(id):
+			_pops[id] = pops[id]
+			_apply_pop(id, float(pops[id]))
+
+
+func _has_item(id: int) -> bool:
+	for group: Group in _groups.values():
+		if group.items.has(id):
+			return true
+	return false
 
 
 static func _group_key(id: StringName, variant: int) -> String:
@@ -149,9 +228,11 @@ func _rebuild(group: Group) -> void:
 	group.dirty = false
 	var multimesh: MultiMesh = group.node.multimesh
 	multimesh.instance_count = group.items.size()
+	group.index.clear()
 	var i: int = 0
 	for decoration: DecorationData in group.items.values():
-		multimesh.set_instance_transform(i, decoration.transform)
+		multimesh.set_instance_transform(i, decoration.transform if not _pops.has(decoration.id) else popped(decoration.transform, float(_pops[decoration.id])))
+		group.index[decoration.id] = i
 		multimesh.set_instance_custom_data(i, Color(decoration.color.r, decoration.color.g, decoration.color.b, pack_finish(decoration)))
 		i += 1
 

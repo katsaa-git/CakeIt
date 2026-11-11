@@ -14,6 +14,7 @@ var camera: OrbitCamera
 var tools: ToolController
 var hud: Hud
 var lighting: StudioLighting
+var audio: AudioManager
 
 
 func _ready() -> void:
@@ -75,6 +76,20 @@ func _ready() -> void:
 	tools.help_requested.connect(hud.toggle_help)
 	tools.photo_requested.connect(take_photo)
 	piping.stroke_finished.connect(func(_s: StrokeData) -> void: hud.hide_first_hint())
+
+	# Juice and sound (milestone F).
+	var juice := Juice.new()
+	add_child(juice)
+	juice.attach(self)
+	audio = AudioManager.new()
+	add_child(audio)
+	audio.attach(self)
+	# A short cream fade hides the first second of shader warm-up (not in
+	# automated runs, which take their own pictures and timings).
+	if OS.get_cmdline_user_args().is_empty():
+		var fade := FadeIn.new()
+		add_child(fade)
+		fade.start(self)
 
 	DevRunner.attach_if_requested(self)
 	print("CakeGame decorating scene ready")

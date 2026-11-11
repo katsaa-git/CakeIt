@@ -99,6 +99,13 @@ static func draw(ci: CanvasItem, id: StringName, rect: Rect2, color: Color, acce
 			ci.draw_colored_polygon(right, Color(accent, 0.35))
 			ci.draw_polyline(_closed(left), color, w, true)
 			ci.draw_polyline(_closed(right), color, w, true)
+		&"sound":
+			# A little speaker with two soft sound waves.
+			var speaker := PackedVector2Array([pt(o, s, 0.16, 0.4), pt(o, s, 0.3, 0.4), pt(o, s, 0.48, 0.24), pt(o, s, 0.48, 0.76), pt(o, s, 0.3, 0.6), pt(o, s, 0.16, 0.6)])
+			ci.draw_colored_polygon(speaker, Color(accent, 0.35))
+			ci.draw_polyline(_closed(speaker), color, w, true)
+			ci.draw_arc(pt(o, s, 0.5, 0.5), s * 0.16, -0.75, 0.75, 12, color, w, true)
+			ci.draw_arc(pt(o, s, 0.5, 0.5), s * 0.3, -0.8, 0.8, 16, accent, w, true)
 		&"help":
 			ci.draw_arc(pt(o, s, 0.5, 0.5), s * 0.36, 0.0, TAU, 32, color, w, true)
 			var hook := PackedVector2Array()

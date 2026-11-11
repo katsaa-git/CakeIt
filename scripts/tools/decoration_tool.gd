@@ -13,6 +13,9 @@ extends DecoratingTool
 
 ## After each press that placed something: where, and how many pieces.
 signal placed(world_position: Vector3, count: int)
+## Every single piece as it lands (sounds and sparkle; the tap of each
+## sprinkle), or the start of a drip or ribbon.
+signal piece_placed(definition: DecorationDefinition, world_position: Vector3)
 
 const GHOST_ALPHA: float = 0.45
 
@@ -119,8 +122,11 @@ func release() -> void:
 	var def: DecorationDefinition = definition()
 	if _rim_decoration != null:
 		_finish_rim()
+	# Pieces still popping carry on in the tier's own layer.
+	var pops: Dictionary = {}
 	for layer: DecorationLayer in _preview_layers.values():
 		if is_instance_valid(layer):
+			pops.merge(layer.running_pops())
 			layer.free()
 	_preview_layers.clear()
 	if _pending.is_empty():
@@ -128,6 +134,7 @@ func release() -> void:
 	var batch: Array[DecorationData] = _pending.duplicate()
 	_pending.clear()
 	context.commands.run(AddDecorationsCommand.new(batch, def.display_name if def != null else "Decoration"))
+	context.view.continue_pops(pops)
 	context.view.flush_decorations()
 	placed.emit(_last_world, batch.size())
 
@@ -212,6 +219,7 @@ func _place(def: DecorationDefinition, tier_id: int, local_position: Vector3, no
 		decoration.text = context.decoration_text
 	_pending.append(decoration)
 	_preview_layer(tier_id).add(decoration)
+	piece_placed.emit(def, context.picker.to_world(local_position + Vector3(0.0, context.model.tier_base_y(tier_id), 0.0)))
 
 
 ## Sprays whole pieces while there is spray to spend: each lands where a ray
@@ -240,6 +248,8 @@ func _preview_layer(tier_id: int) -> DecorationLayer:
 		var view: TierView = context.view.view_for(tier_id)
 		view.add_child(layer)
 		layer.name = "PlacingPreview"
+		# Pieces pop in as they land (only here, not on undo, redo or loading).
+		layer.pop_new = true
 		_preview_layers[tier_id] = layer
 	return layer
 
@@ -270,6 +280,7 @@ func _begin_rim(def: DecorationDefinition, hit: CakePicker.Hit) -> void:
 	if band:
 		_rim_y = band_height(def, tier, hit.local_position.y)
 		_rim_decoration.transform = Transform3D(Basis.IDENTITY.scaled(Vector3.ONE * _size_scale(def)), Vector3(0.0, _rim_y, 0.0))
+	piece_placed.emit(def, hit.world_position)
 	_show_rim()
 
 

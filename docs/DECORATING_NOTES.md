@@ -7,8 +7,8 @@ to extend it, and what still needs work. Newest milestone first in the log.
 
 **Finished and committed:** milestones A (version check, piping core,
 performance), B (turntable, tiers, coat, spatula, interface layout), C
-(lighting, set and look), D (the ten piping tips), E (decorations) and
-E2 (more content and shimmer).
+(lighting, set and look), D (the ten piping tips), E (decorations), E2
+(more content and shimmer) and F (juice and audio).
 
 Godot is at `C:\Users\celia\CakeGame\Godot_v4.7.2-stable_win64.exe` (use
 the `_console` one from a terminal).
@@ -35,41 +35,52 @@ the `_console` one from a terminal).
 - Paged shelves (arrows, wheel, page counter), metallic swatches, a tool
   rail button and shelf for the dust brush.
 
-**Next: milestone F (juice and audio).** Not started.
+**Milestone F (juice and audio) is finished too**:
 
-**Exact next steps for F:**
+- **Sound**, all made in code at start-up by `Synth` (no audio files):
+  a soft wet squeeze while piping (louder and a touch higher the faster
+  the frosting flows), a squish when a squeeze starts and a plip when it
+  stops, a patter of sugar ticks under the sprinkle spray, glassy tocks
+  for pearls, dragées and candles, soft pats for fondant, flowers and
+  fruit, a glug for ganache, a satin swish for ribbons, a smooth swoosh
+  for a new coat, the scraper's rasp while smoothing and a little chime at
+  silky smooth, a brushing whisper and faint glints for lustre dust, a
+  deep thunk as a tier lands, airy whooshes for undo and redo, wooden toks
+  for changing tool, soft taps for buttons, swatches and cards, the low
+  rumble of the turntable, and the sea washing outside the window.
+- **Volume**: the speaker button on the top bar opens Volume, Effects and
+  Seaside sliders, saved between sessions (`user://settings.cfg`).
+- **Juice**: placed decorations pop in with a little spring; a soft puff
+  of sugar where a coat lands; star glints when the scraper reaches silky
+  smooth; glitter drifting off the dust brush; a gentle camera bump and a
+  puff of flour when a tier lands; a short cream fade-in at launch that
+  covers the shader warm-up (and the GPU prepares the main materials
+  behind it).
 
-1. An `AudioManager` (autoload or a node in `main.gd`) that plays short
-   sounds made in code at start-up (AudioStreamWAV from generated samples):
-   a soft squeeze loop whose volume follows `PipingTool.flow_changed`, a
-   sprinkle patter for SCATTER placement, little clicks for pearls and
-   candies (`DecorationTool.placed`), a soft thunk when a tier lands
-   (`CakeView.tier_added_visual`), a whoosh for undo/redo
-   (`ToolController.undo_performed` / `redo_performed`) and UI taps
-   (`IconButton.tapped`, card presses), a soft brushing whisper while the
-   lustre dust brush moves (`DustTool.dusting`). A master volume setting.
-2. Juice: a small pop (scale spring) for placed decorations, a puff of
-   sugar-dust particles where a coat lands (`CoatTool.coat_applied`) and
-   when the spatula finishes (`SpatulaTool.fully_smooth`), a gentle camera
-   nudge (`OrbitCamera.nudge`) when a tier drops in, and a short cream
-   fade-in at launch that hides the first-second shader compile stutter.
-3. `docs/CREDITS.md` for any CC0 clips (none so far: everything is made in
-   code).
+**Next: milestone G (UI polish and photo mode).** Not started.
+
+**Exact next steps for G:**
+
+1. Pick up / erase a single decoration (decorations become pickable:
+   a light collision shape per piece, like stamps have), with its own
+   sound (`tock` reversed) and a puff.
+2. Bigger icons and nicer tooltips (title plus description, the sizes in
+   cm), and a check of every shelf and panel at 1280x720 and 2560x1440.
+3. A graphics quality option (SSAO, depth of field, glow, render scale)
+   in a settings panel next to the sound one (`Settings` already saves to
+   `user://settings.cfg`).
+4. Photo mode: interface hidden, freer camera, click to focus, a shutter
+   sound and flash, saves a PNG to `user://screenshots`.
+5. A bundled cosy font for the interface, signs, plaques and letters.
 
 **Remaining milestones** (from the original brief, in order):
 
-- **F. Juice and audio** (see the steps just above).
-- **G. UI polish and photo mode:**
-  - Bigger icons, nicer tooltips, a way to pick up or erase a single
-    decoration, and a check of every shelf at 1280x720 and 2560x1440.
-  - A graphics quality option (SSAO, depth of field, glow, render scale)
-    for weaker or throttling laptops (see Performance).
-  - Photo mode: UI hidden, freer camera, click to focus, saves a PNG to
-    `user://screenshots`.
+- **G. UI polish and photo mode** (see the steps just above).
 - **H. Save/load and tests:**
   - Versioned JSON of tiers, strokes and decorations. Every data class
     already has `to_dict` / `from_dict` (strokes keep their click
-    direction, decorations their words and drip angles).
+    direction, stripe and finish; decorations their words, ribbon and drip
+    paths and finish; tiers their coat finish and lustre dust).
   - A save/load panel and autosave.
   - A save/load round-trip test.
 
@@ -114,6 +125,11 @@ the `_console` one from a terminal).
   each frame by `CakeView`). Each tier has its own copies of the piping and
   decoration materials (`TierMaterials`) carrying its dust; same shader,
   so no extra draw calls.
+- All sounds are synthesised in code at start-up rather than recorded or
+  downloaded: no licensing, tiny repository, and every sound can be tuned
+  by changing a number.
+- Launch fade-in and shader warm-up are skipped in automated runs so
+  screenshots and benchmarks stay comparable with earlier milestones.
 
 ## Engine version
 
@@ -142,6 +158,7 @@ the `_console` one from a terminal).
 | B, C, F, V, L, T | Tools: piping bag, frosting coat, smoothing scraper, decorations, lustre dust, tiers |
 | Turntable ring (bottom right) | Drag round to spin; click the middle for auto-spin |
 | H | Controls card |
+| Speaker button (top right) | Volume, effects and seaside sliders |
 | Ctrl + Z, Ctrl + Y (or Ctrl + Shift + Z) | Undo, redo |
 
 ## How it is built
@@ -398,6 +415,50 @@ How it works:
 - Sampler: `--scenario=shimmer` (gold dust, gold-painted roses, gold leaf
   stars, a metallic piped scroll and pearl dust).
 
+## Sound and juice
+
+- **Every sound is made in code** (`scripts/audio/synth.gd`): noise and
+  sine blips shaped with simple filters and envelopes into 16-bit
+  `AudioStreamWAV`s, looping where needed (loops are crossfaded into
+  themselves so they never click). Fixed seeds: the same sounds every
+  launch. No audio files, so nothing to license (see `docs/CREDITS.md`).
+- **AudioManager** (`scripts/audio/audio_manager.gd`, a node of the main
+  scene) builds all sounds on a worker thread right after start-up (about
+  0.75 s, hidden by the fade-in), plays short sounds on one polyphonic
+  player (with a little random pitch so repeats never sound mechanical,
+  and a rate limit for sprinkle ticks and dust glints), and runs the
+  continuous sounds (squeeze, scrape, brush, turntable, waves) as loops
+  whose volume glides toward a goal that fades unless the game keeps
+  setting it. Two buses under Master, Effects and Ambience, follow the
+  volumes in `Settings` (`user://settings.cfg`).
+- **What makes which sound** is all in `AudioManager.attach`: tool signals
+  (`PipingTool.flow_changed`, `DecorationTool.piece_placed`,
+  `CoatTool.coat_applied`, `SpatulaTool.smoothing` / `fully_smooth`,
+  `DustTool.dusting`, `TierTool.tier_removed` / `tier_resized`), undo and
+  redo, tool changes, a tier landing, the turntable's speed, and every
+  button under the HUD (buttons with the meta `silent` stay quiet: tool
+  buttons and undo/redo have their own sounds). Decorations choose by
+  placement and tab: sprays tick, drips pour, ribbons swish, sweets and
+  candles tock, everything else pats.
+- **Juice** (`scripts/fx/juice.gd`): CPU particle puffs (a soft billowing
+  cloud plus fine specks) where a coat lands and when a tier lands, star
+  glints when a coat reaches silky smooth, glitter falling off the dust
+  brush, and a camera nudge when a tier lands. Decorations pop in through
+  `DecorationLayer.pop_new` (set only on the placing preview, so undo,
+  redo and loading never pop; running pops are handed to the tier's own
+  layer when the press ends).
+- **Fade-in** (`scripts/fx/fade_in.gd`): a cream screen for at least 0.6 s,
+  until six frames in a row are quick (or 4 s at most), while a few
+  warm-up pieces in front of the camera get their shaders prepared. It is
+  skipped in automated runs (any arguments after `--`), so screenshots and
+  benchmarks are unchanged.
+- To add a sound: write a recipe in `Synth` (return samples), build it in
+  `AudioManager._synthesize`, and play it with `play(&"name")` from a
+  signal in `attach`. The audio tests check every recipe for level,
+  clicks at the end and seamless loops: add it to their list.
+- Sampler: `--scenario=fx --shots=C:/some/folder` saves a sugar puff, a
+  sparkle, the dust brush's glitter and a decoration mid-pop.
+
 ## Tests and tools
 
 - Headless tests:
@@ -418,6 +479,7 @@ How it works:
 - Lustre dust and metallic colours: `... --path . -- --scenario=shimmer --shots=C:/some/folder --angles=close,front`
 - A basketweave cake: `... --path . -- --scenario=weave --shots=C:/some/folder`
 - Benchmark with every tier fully dusted: `... --path . -- --scenario=bench --dust=true`
+- Sound and juice moments: `... --path . -- --scenario=fx --shots=C:/some/folder`
 - `--hide_ui=true` hides the interface during a benchmark (its draw calls
   are then only the 3D scene's).
 - Extra flags: `--ui=true` keeps the interface in shots, `--tools=true` shows
@@ -435,6 +497,20 @@ vsync off, on mains power).
 **Laptop speed changes a lot.** Throttled (hot, or on battery) the same build
 measured 47 fps where it now measures 149 fps. Only compare numbers taken
 side by side, and alternate the two builds (B, C, B, C) when you do.
+
+### End of milestone F (side by side with E2, on battery)
+
+On battery the frame rate swings a lot for both builds (45 to 82 fps on
+the heavy cake), so the clean comparison is the CPU side at a tiny window
+(`--resolution 384x216`), decorated cake spinning, alternating builds:
+
+| Build | avg fps | scripts per frame |
+| --- | --- | --- |
+| E2 | 115 / 136 | 0.32 / 0.21 ms |
+| F | 120 / 120 | 0.27 / 0.26 ms |
+
+So sound, particles and pops cost nothing measurable. Building every sound
+takes about 0.75 s on a worker thread at start-up (hidden by the fade-in).
 
 ### End of milestone E2 (side by side with E, on mains power)
 
@@ -518,6 +594,14 @@ a long stroke cost ~39 ms. What changed then:
 
 ## Known issues
 
+- The sounds were tuned by measuring them (level, length, smooth endings,
+  seamless loops), not by ear: they need a listening pass on real speakers
+  and headphones. All recipes are in `Synth`, easy to adjust.
+- Sounds are ready about 0.75 s after launch (they are built on a worker
+  thread); anything done in that first moment is silent, but the fade-in
+  usually covers it.
+- The seaside ambience is a 10.5 s loop of two waves; a longer or
+  varied loop (or occasional gulls) would hide the repetition better.
 - Sugar peonies look a little like crumpled paper close up (many thin,
   ruffled petals); worth another art pass. Sugar roses are faceted up close.
 - The dust brush deposits per frame, so a fast scripted path (or a very
@@ -534,8 +618,8 @@ a long stroke cost ~39 ms. What changed then:
   the piping lands on the cake underneath).
 - A single decoration can only be removed with undo or Clear all; a "pick
   up" or eraser is planned for G.
-- Start-up: the first second can stutter while shaders compile; a short
-  cream fade-in at launch would hide it (planned for F).
+- Start-up: the fade-in covers shader warm-up for the main materials; a
+  material seen for the first time later can still hitch once.
 - Clicks with the petal and ruffle tips lean one way or the other depending
   on drag direction (like a real slanted tip); possibly worth an "always
   thin edge up" option.
@@ -558,6 +642,18 @@ a long stroke cost ~39 ms. What changed then:
 
 ## Milestone log
 
+- **F. Juice and audio.** Every sound made in code (`Synth`): piping
+  squeeze, squish and plip, sprinkle ticks, tocks and pats for placed
+  pieces, ganache glug, ribbon swish, coat swoosh, scraper rasp and silky
+  chime, dust brushing and glints, tier thunk, undo/redo whooshes, tool
+  toks, button taps, turntable rumble and seaside waves. `AudioManager`
+  (worker-thread synthesis, polyphonic one-shots, gliding loops, Effects
+  and Ambience buses) and a sound panel with saved volumes (`Settings`).
+  Juice: decorations pop in, sugar puffs and star glints, dust glitter,
+  camera nudge on a tier landing, a launch fade-in with shader warm-up.
+  Audio tests (levels, endings, seamless loops, settings, the manager, the
+  pop), a steadier tip-speed test, input-test steps for the sound panel,
+  an fx scenario.
 - **E2. More content and shimmer.** Eleven new tips (Writing, French Star,
   Rosette Swirl, Twisted Rope, Bead Border, Lace Scallop, Russian Flower,
   Tulip, Chrysanthemum, Triple Line, Serrated Weave) with new profiles and

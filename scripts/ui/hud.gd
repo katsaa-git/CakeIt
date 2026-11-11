@@ -35,6 +35,7 @@ var _help: PanelContainer
 var _confirm: Control
 var _undo_button: IconButton
 var _redo_button: IconButton
+var _sound_panel: PanelContainer
 
 
 func setup(new_context: EditorContext, new_tools: ToolController) -> void:
@@ -56,6 +57,7 @@ func setup(new_context: EditorContext, new_tools: ToolController) -> void:
 	_build_turntable_dial()
 	_build_toast_and_hint()
 	_build_help()
+	_build_sound_panel()
 	_build_confirm()
 
 	context.tool_changed.connect(_on_tool_changed)
@@ -95,6 +97,10 @@ func hide_first_hint() -> void:
 		tween.tween_callback(func() -> void: _hint.visible = false)
 
 
+func toggle_sound() -> void:
+	_sound_panel.visible = not _sound_panel.visible
+
+
 func toggle_help() -> void:
 	_help.visible = not _help.visible
 
@@ -110,7 +116,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	var key := event as InputEventKey
 	if key == null or not key.pressed or key.echo:
 		return
-	if key.keycode == KEY_ESCAPE and (_help.visible or _confirm.visible):
+	if key.keycode == KEY_ESCAPE and (_help.visible or _confirm.visible or _sound_panel.visible):
+		_sound_panel.visible = false
 		_help.visible = false
 		_confirm.visible = false
 		get_viewport().set_input_as_handled()
@@ -138,6 +145,8 @@ func _build_tool_rail() -> void:
 		button.button_group = group
 		button.disabled = not tools.tools.has(id)
 		button.pressed.connect(func() -> void: tools.select_tool(id))
+		# Changing tool has its own sound.
+		button.set_meta("silent", true)
 		column.add_child(button)
 		_tool_buttons[id] = button
 
@@ -218,9 +227,12 @@ func _build_top_bar() -> void:
 	bar.add_child(row)
 	_undo_button = IconButton.make(&"undo", "Undo", "Ctrl+Z", "", 54.0)
 	_undo_button.pressed.connect(tools.undo)
+	# Undo and redo have their own whoosh, so their buttons stay quiet.
+	_undo_button.set_meta("silent", true)
 	row.add_child(_undo_button)
 	_redo_button = IconButton.make(&"redo", "Redo", "Ctrl+Y", "", 54.0)
 	_redo_button.pressed.connect(tools.redo)
+	_redo_button.set_meta("silent", true)
 	row.add_child(_redo_button)
 	var clear := IconButton.make(&"clear", "Clear all piping and decorations", "", "", 54.0)
 	clear.pressed.connect(ask_clear)
@@ -228,6 +240,9 @@ func _build_top_bar() -> void:
 	var photo := IconButton.make(&"photo", "Photo mode", "P", "", 54.0)
 	photo.pressed.connect(func() -> void: photo_requested.emit())
 	row.add_child(photo)
+	var sound := IconButton.make(&"sound", "Sound and volume", "", "", 54.0)
+	sound.pressed.connect(toggle_sound)
+	row.add_child(sound)
 	var help := IconButton.make(&"help", "Controls", "H", "", 54.0)
 	help.pressed.connect(toggle_help)
 	row.add_child(help)
@@ -404,3 +419,57 @@ func _refresh_undo() -> void:
 	_redo_button.disabled = not context.commands.can_redo()
 	_undo_button.queue_redraw()
 	_redo_button.queue_redraw()
+
+
+## Volume sliders under the top bar: overall, effects and the seaside
+## ambience. Changes are heard at once and kept for next time.
+func _build_sound_panel() -> void:
+	_sound_panel = PanelContainer.new()
+	_sound_panel.name = "Sound"
+	_sound_panel.add_theme_stylebox_override("panel", UiTheme.panel_style(20, 16.0))
+	_sound_panel.anchor_left = 1.0
+	_sound_panel.anchor_right = 1.0
+	_sound_panel.offset_right = -22.0
+	_sound_panel.offset_top = 100.0
+	_sound_panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_sound_panel.visible = false
+	_root.add_child(_sound_panel)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 8)
+	_sound_panel.add_child(column)
+	var title := Label.new()
+	title.text = "Sound"
+	title.add_theme_font_override("font", UiTheme.font(true))
+	title.add_theme_font_size_override("font_size", 20)
+	column.add_child(title)
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 16)
+	grid.add_theme_constant_override("v_separation", 10)
+	column.add_child(grid)
+	var rows: Array = [
+		["Volume", "master", "Everything"],
+		["Effects", "effects", "Piping, sprinkles, tools and buttons"],
+		["Seaside", "ambience", "The waves outside the bakery window"],
+	]
+	for row: Array in rows:
+		var label := UiTheme.caption(row[0], false, 16)
+		label.tooltip_text = row[2]
+		label.mouse_filter = Control.MOUSE_FILTER_PASS
+		grid.add_child(label)
+		var slider := HSlider.new()
+		slider.name = String(row[1]).capitalize()
+		slider.custom_minimum_size = Vector2(190.0, 24.0)
+		slider.min_value = 0.0
+		slider.max_value = 1.0
+		slider.step = 0.01
+		slider.focus_mode = Control.FOCUS_NONE
+		slider.tooltip_text = row[2]
+		var key: String = row[1]
+		slider.value = Settings.volume(key)
+		slider.value_changed.connect(func(value: float) -> void:
+			Settings.set_volume(key, value)
+			Settings.save_settings()
+			AudioManager.apply_volumes())
+		grid.add_child(slider)
+	column.add_child(UiTheme.caption("Every sound is made by the game itself.", true, 13))

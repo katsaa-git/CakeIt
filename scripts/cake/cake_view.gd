@@ -91,6 +91,15 @@ func flush() -> void:
 
 ## Shows decoration changes right away instead of at the end of the frame
 ## (so a tool can swap its live preview for the real thing without a gap).
+## Lets decorations that started popping while being placed finish their
+## little bounce on their tier.
+func continue_pops(pops: Dictionary) -> void:
+	if pops.is_empty():
+		return
+	for view in _all_views():
+		view.decorations.continue_pops(pops)
+
+
 func flush_decorations() -> void:
 	for view in _all_views():
 		view.decorations.flush()

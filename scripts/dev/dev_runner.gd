@@ -56,6 +56,9 @@ func _run() -> void:
 			_build_gallery(context)
 		"shimmer":
 			_build_shimmer(context)
+		"fx":
+			await _wait_for_cake(context)
+			await _fx_shots(context)
 		"weave":
 			_build_weave(context)
 		"tips":
@@ -552,6 +555,7 @@ func _input_test(context: EditorContext) -> void:
 	await _input_test_tools(context)
 	await _input_test_decorations(context)
 	await _input_test_e2(context)
+	await _input_test_sound(context)
 	print("INPUT_TEST %s (%d failures)" % ["PASSED" if _input_failures == 0 else "FAILED", _input_failures])
 
 
@@ -1231,3 +1235,74 @@ func _input_test_e2(context: EditorContext) -> void:
 	await _drag(line)
 	_expect(model.strokes.size() == strokes + 1 and model.strokes[model.strokes.size() - 1].stripe.a > 0.0, "a two-tone bag pipes a striped line")
 	context.set_two_tone(false)
+
+
+## Juice caught mid-air: a sugar puff where a coat lands, the sparkle of a
+## silky-smooth coat, glitter falling off the dust brush, and a cherry
+## mid-pop. Saves its own pictures (`--shots=<folder>`).
+func _fx_shots(context: EditorContext) -> void:
+	var folder: String = args.get("shots", OS.get_user_data_dir())
+	DirAccess.make_dir_recursive_absolute(folder)
+	var juice: Juice = main.get_node("Juice")
+	var tools: ToolController = main.get("tools")
+	tools.set_enabled(false)
+	(main.get("hud") as Hud).set_interface_visible(false)
+	var camera: OrbitCamera = context.camera
+	camera.yaw_goal = 0.6
+	camera.pitch_goal = 0.3
+	camera.distance_goal = 4.2
+	await get_tree().create_timer(1.2).timeout
+	var tier: TierData = context.model.tiers[0]
+	var front: float = _front_angle(context)
+	var spot: Vector3 = context.picker.to_world(Vector3(cos(front) * tier.radius, tier.height * 0.6, sin(front) * tier.radius))
+	juice.puff(spot, Color(0.98, 0.86, 0.87).lightened(0.35))
+	await get_tree().create_timer(0.16).timeout
+	_save_shot(folder, "fx_puff")
+	await get_tree().create_timer(1.2).timeout
+	juice.sparkle(spot + Vector3(0.0, 0.2, 0.0), Color(1.0, 0.98, 0.94))
+	await get_tree().create_timer(0.25).timeout
+	_save_shot(folder, "fx_sparkle")
+	await get_tree().create_timer(1.0).timeout
+	context.set_color(Color(1.0, 0.8, 0.42), 1.0)
+	var dust: DustTool = tools.tools[&"dust"]
+	for i in range(30):
+		var a: float = front - 0.3 + float(i) * 0.02
+		dust.dusting.emit(context.picker.to_world(Vector3(cos(a) * tier.radius, tier.height * 0.5, sin(a) * tier.radius)))
+		await get_tree().process_frame
+	_save_shot(folder, "fx_dust_trail")
+	var deco: DecorationTool = tools.tools[&"decorate"]
+	context.set_color(Color(1.0, 0.97, 0.92))
+	deco.place_one(Content.decoration(&"sugar_bunny"), tier.id, Vector3(cos(front) * 0.5, tier.height, sin(front) * 0.5), Vector3.UP)
+	await get_tree().create_timer(0.05).timeout
+	_save_shot(folder, "fx_pop")
+
+
+func _save_shot(folder: String, shot_name: String) -> void:
+	var path: String = folder.path_join(shot_name + ".png")
+	get_viewport().get_texture().get_image().save_png(path)
+	print("SHOT ", path)
+
+
+## The sound panel: the speaker button opens it, a slider changes the
+## Effects bus at once.
+func _input_test_sound(_context: EditorContext) -> void:
+	var to_window: Transform2D = get_viewport().get_final_transform()
+	var hud: Hud = main.get("hud")
+	var sound_button: Control = null
+	for node in hud.get_node("Root/TopBar").find_children("*", "IconButton", true, false):
+		if (node as IconButton).icon_id == &"sound":
+			sound_button = node
+	_expect(sound_button != null, "the top bar has a sound button")
+	if sound_button == null:
+		return
+	await _click(to_window * sound_button.get_global_rect().get_center())
+	var panel: Control = hud.get_node("Root/Sound")
+	_expect(panel.visible, "the sound button opens the volume panel")
+	var slider: HSlider = panel.find_child("Effects", true, false)
+	var before: float = Settings.effects
+	slider.value = 0.25
+	var bus: int = AudioServer.get_bus_index(AudioManager.BUS_EFFECTS)
+	_expect(absf(db_to_linear(AudioServer.get_bus_volume_db(bus)) - 0.25) < 0.01, "the Effects slider sets the Effects volume")
+	slider.value = before
+	await _click(to_window * sound_button.get_global_rect().get_center())
+	_expect(not panel.visible, "clicking again closes it")
